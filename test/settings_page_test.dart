@@ -1,11 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:koin/core/db/user_state.dart';
+import 'package:koin/core/providers.dart';
 import 'package:koin/core/theme/app_theme.dart';
 import 'package:koin/features/settings/settings_page.dart';
 
 void main() {
   testWidgets('toggles read defaults and persist changes', (tester) async {
+    // Tall enough that the whole "Atur" list is built at once.
+    tester.view.physicalSize = const Size(1170, 4200);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
     final saved = <String, Object?>{};
     tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
       const MethodChannel('home_widget'),
@@ -23,13 +30,24 @@ void main() {
     );
 
     await tester.pumpWidget(
-      MaterialApp(theme: buildAppTheme(), home: const SettingsPage()),
+      ProviderScope(
+        overrides: [
+          userStateProvider.overrideWith(
+            (ref) => Stream.value(UserState.initial(DateTime.now())),
+          ),
+        ],
+        child: MaterialApp(
+          theme: buildAppTheme(),
+          home: const Scaffold(body: SettingsPage()),
+        ),
+      ),
     );
     for (var i = 0; i < 20; i++) {
       await tester.pump(const Duration(milliseconds: 50));
     }
 
     expect(find.byType(CircularProgressIndicator), findsNothing);
+    expect(find.text('Target hemat harian'), findsOneWidget);
     expect(tester.binding.hasScheduledFrame, isFalse);
 
     SwitchListTile tile(String title) =>

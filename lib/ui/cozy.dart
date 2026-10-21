@@ -122,3 +122,40 @@ class StatusPill extends StatelessWidget {
     );
   }
 }
+
+/// Top of every tab: small context line, the tab's name, optional actions.
+class PageHeader extends StatelessWidget {
+  const PageHeader({
+    super.key,
+    required this.context,
+    required this.title,
+    this.actions = const [],
+  });
+
+  /// e.g. today's date or the month being shown.
+  final String context;
+  final String title;
+  final List<Widget> actions;
+
+  @override
+  Widget build(BuildContext context) {
+    final text = Theme.of(context).textTheme;
+    return Row(
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(this.context, style: text.bodySmall),
+              Text(title, style: text.headlineMedium),
+            ],
+          ),
+        ),
+        for (final (i, a) in actions.indexed) ...[
+          if (i > 0) const SizedBox(width: 8),
+          a,
+        ],
+      ],
+    );
+  }
+}

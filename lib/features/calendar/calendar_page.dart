@@ -44,33 +44,21 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
     final today = ref.watch(todayProvider);
     final txs = ref.watch(transactionsProvider(monthRange(_month)));
     final user = ref.watch(userStateProvider);
-    final text = Theme.of(context).textTheme;
 
     return SafeArea(
       bottom: false,
       child: ListView(
         padding: const EdgeInsets.fromLTRB(20, 20, 20, navBarClearance),
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Kalender pengeluaran', style: text.bodySmall),
-                    Text(
-                      DateFormat('MMMM yyyy', 'id_ID').format(_month),
-                      style: text.headlineMedium,
-                    ),
-                  ],
-                ),
-              ),
+          PageHeader(
+            context: DateFormat('MMMM yyyy', 'id_ID').format(_month),
+            title: 'Kalender',
+            actions: [
               _RoundButton(
                 icon: Icons.chevron_left_rounded,
                 tooltip: 'Bulan sebelumnya',
                 onPressed: () => _shiftMonth(-1),
               ),
-              const SizedBox(width: 8),
               _RoundButton(
                 icon: Icons.chevron_right_rounded,
                 tooltip: 'Bulan berikutnya',

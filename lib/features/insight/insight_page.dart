@@ -3,17 +3,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/budget/budget.dart';
-import '../../core/db/user_state.dart';
 import '../../core/format.dart';
 import '../../core/providers.dart';
 import '../../core/theme/app_colors.dart';
 import '../../ui/cozy.dart';
-import '../../ui/koko_sprite.dart';
 import '../shell/home_shell.dart';
 
 enum _Period { week, month }
 
-/// Spending per day vs. the daily target, plus the target editor.
+/// Spending per day vs. the daily target.
 class InsightPage extends ConsumerStatefulWidget {
   const InsightPage({super.key});
 
@@ -32,27 +30,16 @@ class _InsightPageState extends ConsumerState<InsightPage> {
         : monthRange(today);
     final txs = ref.watch(transactionsProvider(range));
     final user = ref.watch(userStateProvider);
-    final text = Theme.of(context).textTheme;
 
     return SafeArea(
       bottom: false,
       child: ListView(
         padding: const EdgeInsets.fromLTRB(20, 20, 20, navBarClearance),
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      DateFormat('MMMM yyyy', 'id_ID').format(today),
-                      style: text.bodySmall,
-                    ),
-                    Text('Insight', style: text.headlineMedium),
-                  ],
-                ),
-              ),
+          PageHeader(
+            context: DateFormat('MMMM yyyy', 'id_ID').format(today),
+            title: 'Insight',
+            actions: [
               SegmentedButton<_Period>(
                 showSelectedIcon: false,
                 segments: const [
@@ -81,8 +68,6 @@ class _InsightPageState extends ConsumerState<InsightPage> {
               child: Center(child: CircularProgressIndicator()),
             ),
           },
-          const SizedBox(height: 16),
-          if (user case AsyncData(:final value)) _TargetCard(user: value),
         ],
       ),
     );
@@ -354,121 +339,4 @@ class _DashedLine extends StatelessWidget {
       },
     );
   }
-}
-
-class _TargetCard extends ConsumerStatefulWidget {
-  const _TargetCard({required this.user});
-
-  final UserState user;
-
-  @override
-  ConsumerState<_TargetCard> createState() => _TargetCardState();
-}
-
-class _TargetCardState extends ConsumerState<_TargetCard> {
-  static const _min = 50000.0;
-  static const _max = 500000.0;
-  static const _step = 10000.0;
-
-  late double _value = _clampTarget(widget.user.dailyBudgetTarget);
-  var _saving = false;
-
-  static double _clampTarget(double v) => v.clamp(_min, _max);
-
-  bool get _dirty => _value != widget.user.dailyBudgetTarget;
-
-  @override
-  void didUpdateWidget(_TargetCard old) {
-    super.didUpdateWidget(old);
-    if (old.user.dailyBudgetTarget != widget.user.dailyBudgetTarget) {
-      _value = _clampTarget(widget.user.dailyBudgetTarget);
-    }
-  }
-
-  Future<void> _save() async {
-    setState(() => _saving = true);
-    final messenger = ScaffoldMessenger.of(context);
-    try {
-      await ref.read(repositoryProvider).setDailyBudget(_value);
-      messenger.showSnackBar(
-        SnackBar(content: Text('Target harian: ${formatRupiah(_value)}')),
-      );
-    } catch (e) {
-      messenger.showSnackBar(SnackBar(content: Text('Gagal menyimpan: $e')));
-    } finally {
-      if (mounted) setState(() => _saving = false);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return CozyCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Target hemat harian',
-            style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
-          ),
-          Text(
-            formatRupiah(_value),
-            style: const TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.w800,
-              letterSpacing: -0.7,
-            ),
-          ),
-          Slider(
-            value: _value,
-            min: _min,
-            max: _max,
-            divisions: ((_max - _min) / _step).round(),
-            label: formatShort(_value),
-            onChanged: (v) => setState(() => _value = v),
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('Rp ${formatShort(_min)}', style: _rangeStyle),
-              Text('Rp ${formatShort(_max)}', style: _rangeStyle),
-            ],
-          ),
-          const SizedBox(height: 14),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: AppColors.sageLight,
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Row(
-              children: [
-                const KokoSprite(mood: KokoMood.happy, width: 36),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    'Koko tetap senang selama belanja harianmu '
-                    '≤ ${formatRupiah(_value * happyThreshold)}.',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: AppColors.sageDark,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 14),
-          FilledButton(
-            onPressed: _dirty && !_saving ? _save : null,
-            child: Text(_saving ? 'Menyimpan…' : 'Simpan target'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  static const _rangeStyle = TextStyle(
-    fontSize: 12,
-    color: AppColors.textSecondary,
-  );
 }

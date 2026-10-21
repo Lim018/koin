@@ -7,6 +7,7 @@ import 'package:koin/core/budget/budget.dart';
 import 'package:koin/core/db/transaction.dart';
 import 'package:koin/core/db/user_state.dart';
 import 'package:koin/core/providers.dart';
+import 'package:koin/ui/cozy.dart';
 
 void main() {
   setUpAll(() => initializeDateFormatting('id_ID'));
@@ -47,7 +48,7 @@ void main() {
 
   testWidgets('dashboard shows happy Koko and an empty diary', (tester) async {
     await pumpApp(tester, []);
-    expect(find.text('Halo lagi'), findsOneWidget);
+    expect(find.widgetWithText(PageHeader, 'Beranda'), findsOneWidget);
     expect(find.textContaining('Senang', findRichText: true), findsOneWidget);
     expect(find.textContaining('Belum ada catatan'), findsOneWidget);
   });
@@ -61,17 +62,25 @@ void main() {
     expect(find.text('−Rp 250.000'), findsOneWidget);
   });
 
-  testWidgets('calendar and insight tabs render', (tester) async {
+  testWidgets('every tab renders under its own header', (tester) async {
     await pumpApp(tester, [tx(45000, 'Nasi padang')]);
 
     await tester.tap(find.byIcon(Icons.calendar_month_rounded));
     await tester.pump();
     await tester.pump();
+    expect(find.widgetWithText(PageHeader, 'Kalender'), findsOneWidget);
     expect(find.text('Total Pengeluaran Bulan Ini'), findsOneWidget);
 
     await tester.tap(find.byIcon(Icons.bar_chart_rounded));
     await tester.pump();
     await tester.pump();
+    expect(find.widgetWithText(PageHeader, 'Insight'), findsOneWidget);
+
+    // The daily target lives in "Atur", next to the other settings.
+    await tester.tap(find.byIcon(Icons.tune_rounded));
+    await tester.pump();
+    await tester.pump();
+    expect(find.widgetWithText(PageHeader, 'Atur'), findsOneWidget);
     expect(find.text('Target hemat harian'), findsOneWidget);
     expect(find.text('Simpan target'), findsOneWidget);
   });

@@ -10,7 +10,6 @@ import '../../core/providers.dart';
 import '../../core/theme/app_colors.dart';
 import '../../ui/cozy.dart';
 import '../../ui/koko_sprite.dart';
-import '../settings/settings_page.dart';
 import '../shell/home_shell.dart';
 
 /// "Kamar Koko": the mascot's room on top, today's diary below.
@@ -23,44 +22,18 @@ class DashboardPage extends ConsumerWidget {
     final todaySummary = ref.watch(todaySummaryProvider);
     final weekSummary = ref.watch(weekSummaryProvider);
     final transactions = ref.watch(transactionsProvider(dayRange(today)));
-    final text = Theme.of(context).textTheme;
 
     return SafeArea(
       bottom: false,
       child: ListView(
         padding: const EdgeInsets.fromLTRB(20, 20, 20, navBarClearance),
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      DateFormat('EEEE, d MMMM', 'id_ID').format(today),
-                      style: text.bodySmall,
-                    ),
-                    Text('Halo lagi', style: text.headlineMedium),
-                  ],
-                ),
-              ),
+          PageHeader(
+            context: DateFormat('EEEE, d MMMM', 'id_ID').format(today),
+            title: 'Beranda',
+            actions: [
               _CoinChip(
                 coins: ref.watch(userStateProvider).valueOrNull?.savedCoins,
-              ),
-              const SizedBox(width: 8),
-              IconButton(
-                tooltip: 'Otomatisasi',
-                onPressed: () => Navigator.of(context).push(
-                  MaterialPageRoute<void>(builder: (_) => const SettingsPage()),
-                ),
-                icon: const Icon(
-                  Icons.tune_rounded,
-                  color: AppColors.textPrimary,
-                ),
-                style: IconButton.styleFrom(
-                  backgroundColor: AppColors.card,
-                  side: const BorderSide(color: AppColors.cardBorder),
-                ),
               ),
             ],
           ),
