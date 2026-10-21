@@ -160,6 +160,8 @@ class _Body extends StatelessWidget {
               GridView.count(
                 crossAxisCount: 7,
                 shrinkWrap: true,
+                // Not a page-level scroll view: no safe-area padding.
+                padding: EdgeInsets.zero,
                 physics: const NeverScrollableScrollPhysics(),
                 childAspectRatio: 44 / 46,
                 children: [
@@ -370,6 +372,8 @@ class _SelectedDay extends StatelessWidget {
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 Text(
                   status,
@@ -381,6 +385,7 @@ class _SelectedDay extends StatelessWidget {
               ],
             ),
           ),
+          const SizedBox(width: 12),
           Text(
             formatRupiah(spent),
             style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),

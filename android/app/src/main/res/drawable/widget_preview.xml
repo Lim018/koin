@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Widget picker preview for launchers that ignore previewLayout. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@drawable/widget_background" />
+    <item
+        android:drawable="@drawable/koko_happy"
+        android:gravity="center"
+        android:width="120dp"
+        android:height="108dp" />
+</layer-list>

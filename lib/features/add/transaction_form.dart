@@ -186,6 +186,8 @@ Future<void> showAddTransactionSheet(BuildContext context) {
   return showModalBottomSheet(
     context: context,
     isScrollControlled: true,
+    // Android 15+ is edge-to-edge: keep the sheet below the status bar.
+    useSafeArea: true,
     backgroundColor: AppColors.card,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(28)),

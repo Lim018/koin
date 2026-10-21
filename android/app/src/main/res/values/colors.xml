@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Mirrors lib/core/theme/app_colors.dart -->
 <resources>
+    <color name="icon_background">#F8EFE4</color>
     <color name="text_primary">#2A211B</color>
     <color name="text_secondary">#7A6A5E</color>
     <color name="text_on_chip">#6B5A4E</color>

@@ -2,6 +2,7 @@
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
     android:description="@string/widget_description"
     android:initialLayout="@layout/koko_widget"
+    android:previewImage="@drawable/widget_preview"
     android:previewLayout="@layout/koko_widget"
     android:minWidth="250dp"
     android:minHeight="250dp"

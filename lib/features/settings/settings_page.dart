@@ -70,105 +70,108 @@ class _SettingsPageState extends State<SettingsPage>
   @override
   Widget build(BuildContext context) {
     final values = _values;
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      appBar: AppBar(
-        title: const Text('Otomatisasi'),
+    // The cream gradient sits behind the whole Scaffold (app bar included).
+    return CozyBackground(
+      child: Scaffold(
         backgroundColor: Colors.transparent,
-        surfaceTintColor: Colors.transparent,
-      ),
-      extendBodyBehindAppBar: false,
-      body: CozyBackground(
-        child: values == null
-            ? const Center(child: CircularProgressIndicator())
-            : ListView(
-                padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
-                children: [
-                  _AccessCard(
-                    listenerEnabled: _listenerEnabled,
-                    canNotify: _canNotify,
-                  ),
-                  const _SectionLabel('SUMBER NOTIFIKASI'),
-                  _Group(
-                    children: [
-                      _toggle(
-                        NativeSetting.gopay,
-                        Icons.account_balance_wallet_outlined,
-                        const Color(0xFFE5EFE0),
-                        'Baca Notif GoPay',
-                        'Gojek & GoPay',
-                      ),
-                      _toggle(
-                        NativeSetting.bank,
-                        Icons.account_balance_outlined,
-                        const Color(0xFFF6EDD4),
-                        'Baca Notif M-Banking',
-                        'BCA, Livin’ Mandiri, BRImo, BNI',
-                      ),
-                      _toggle(
-                        NativeSetting.ewallet,
-                        Icons.phone_android_outlined,
-                        const Color(0xFFF1ECE5),
-                        'E-Wallet lainnya',
-                        'OVO, DANA, ShopeePay',
-                      ),
-                      _toggle(
-                        NativeSetting.confirm,
-                        Icons.check_rounded,
-                        const Color(0xFFFCE8DC),
-                        'Tanya sebelum mencatat',
-                        values[NativeSetting.confirm]!
-                            ? 'Tampilkan YA, CATAT / UBAH / ABAIKAN'
-                            : 'Langsung dicatat tanpa bertanya',
+        appBar: AppBar(
+          title: const Text('Otomatisasi'),
+          backgroundColor: Colors.transparent,
+          surfaceTintColor: Colors.transparent,
+          foregroundColor: AppColors.textPrimary,
+        ),
+        body: SizedBox.expand(
+          child: values == null
+              ? const Center(child: CircularProgressIndicator())
+              : ListView(
+                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+                  children: [
+                    _AccessCard(
+                      listenerEnabled: _listenerEnabled,
+                      canNotify: _canNotify,
+                    ),
+                    const _SectionLabel('SUMBER NOTIFIKASI'),
+                    _Group(
+                      children: [
+                        _toggle(
+                          NativeSetting.gopay,
+                          Icons.account_balance_wallet_outlined,
+                          const Color(0xFFE5EFE0),
+                          'Baca Notif GoPay',
+                          'Gojek & GoPay',
+                        ),
+                        _toggle(
+                          NativeSetting.bank,
+                          Icons.account_balance_outlined,
+                          const Color(0xFFF6EDD4),
+                          'Baca Notif M-Banking',
+                          'BCA, Livin’ Mandiri, BRImo, BNI',
+                        ),
+                        _toggle(
+                          NativeSetting.ewallet,
+                          Icons.phone_android_outlined,
+                          const Color(0xFFF1ECE5),
+                          'E-Wallet lainnya',
+                          'OVO, DANA, ShopeePay',
+                        ),
+                        _toggle(
+                          NativeSetting.confirm,
+                          Icons.check_rounded,
+                          const Color(0xFFFCE8DC),
+                          'Tanya sebelum mencatat',
+                          values[NativeSetting.confirm]!
+                              ? 'Tampilkan YA, CATAT / UBAH / ABAIKAN'
+                              : 'Langsung dicatat tanpa bertanya',
+                        ),
+                      ],
+                    ),
+                    const _SectionLabel('TAMPILAN WIDGET'),
+                    _Group(
+                      children: [
+                        _toggle(
+                          NativeSetting.showKoko,
+                          null,
+                          null,
+                          'Tampilkan Koko',
+                          'Maskot muncul di pojok widget',
+                        ),
+                        _toggle(
+                          NativeSetting.moodFollows,
+                          null,
+                          null,
+                          'Ekspresi ikut budget',
+                          'Senang, khawatir, atau kesal',
+                        ),
+                      ],
+                    ),
+                    if (AutomationPermissions.supported) ...[
+                      const SizedBox(height: 12),
+                      OutlinedButton.icon(
+                        onPressed: () => HomeWidget.requestPinWidget(
+                          qualifiedAndroidName: _widgetProvider,
+                        ),
+                        icon: const Icon(Icons.widgets_outlined),
+                        label: const Text('Pasang widget di beranda'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.sageDark,
+                          side: const BorderSide(color: AppColors.chipBorder),
+                          minimumSize: const Size.fromHeight(44),
+                        ),
                       ),
                     ],
-                  ),
-                  const _SectionLabel('TAMPILAN WIDGET'),
-                  _Group(
-                    children: [
-                      _toggle(
-                        NativeSetting.showKoko,
-                        null,
-                        null,
-                        'Tampilkan Koko',
-                        'Maskot muncul di pojok widget',
-                      ),
-                      _toggle(
-                        NativeSetting.moodFollows,
-                        null,
-                        null,
-                        'Ekspresi ikut budget',
-                        'Senang, khawatir, atau kesal',
-                      ),
-                    ],
-                  ),
-                  if (AutomationPermissions.supported) ...[
-                    const SizedBox(height: 12),
-                    OutlinedButton.icon(
-                      onPressed: () => HomeWidget.requestPinWidget(
-                        qualifiedAndroidName: _widgetProvider,
-                      ),
-                      icon: const Icon(Icons.widgets_outlined),
-                      label: const Text('Pasang widget di beranda'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.sageDark,
-                        side: const BorderSide(color: AppColors.chipBorder),
-                        minimumSize: const Size.fromHeight(44),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Koin tidak pernah mengirim isi notifikasi ke server. '
+                      'Kamu bisa mematikan akses kapan saja.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        height: 1.45,
+                        color: AppColors.textSecondary,
                       ),
                     ),
                   ],
-                  const SizedBox(height: 16),
-                  const Text(
-                    'Koin tidak pernah mengirim isi notifikasi ke server. '
-                    'Kamu bisa mematikan akses kapan saja.',
-                    style: TextStyle(
-                      fontSize: 12,
-                      height: 1.45,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
+                ),
+        ),
       ),
     );
   }
