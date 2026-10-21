@@ -11,7 +11,7 @@ A frictionless personal finance tracker designed to eliminate user friction in l
 - **Frontend / Core Logic:** Flutter & Dart.
 - **State Management:** BLoC or Riverpod (Ensure clean separation of UI and Business Logic).
 - **Native Android Bridge:** Kotlin via `MethodChannel`. Required for:
-  - `AppWidgetProvider` (4x4 Home Screen Widget).
+  - `AppWidgetProvider` (2x2 Home Screen Widget).
   - `NotificationListenerService` (Auto-read background service).
   - `Theme.Translucent.NoTitleBar` Activity (For quick-add pop-up).
 - **Database:** Isar Database ONLY. (Strictly offline-first. Extremely high-performance synchronous read/write operations suitable for instant widget/pop-up interactions).
@@ -30,8 +30,8 @@ A frictionless personal finance tracker designed to eliminate user friction in l
 
 ## 4. Core Features & Technical Requirements
 
-### 4.1. 4x4 Mascot Dashboard Widget (Home Screen)
-- **Constraint:** Must only take up exactly 40-50% of the screen height (True 4x4 Android grid layout), leaving the bottom half of the screen for regular app icons.
+### 4.1. 2x2 Mascot Dashboard Widget (Home Screen)
+- **Constraint:** Compact 2x2 Android grid widget (resizable), so it sits alongside regular app icons.
 - **Components:** 
   - Dynamic Mascot mood icon (Happy if under budget, Grumpy if over budget).
   - Large text displaying today's total spending.

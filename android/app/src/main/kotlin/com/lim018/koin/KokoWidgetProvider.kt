@@ -14,7 +14,7 @@ import java.util.Locale
 import kotlin.math.roundToInt
 
 /**
- * 4x4 home screen widget: today's spending, Koko's mood and "+ TAMBAH".
+ * 2x2 home screen widget: today's spending, Koko's mood and "+ TAMBAH".
  * Data is written by the Flutter side (lib/core/home_widget_sync.dart).
  */
 class KokoWidgetProvider : HomeWidgetProvider() {
@@ -45,20 +45,16 @@ class KokoWidgetProvider : HomeWidgetProvider() {
         val percent = if (s.budget > 0) (s.spent * 100.0 / s.budget).roundToInt() else 0
 
         return RemoteViews(context.packageName, R.layout.koko_widget).apply {
-            setTextViewText(R.id.amount, rupiah.format(s.spent))
+            setTextViewText(R.id.amount, "Rp ${rupiah.format(s.spent)}")
 
             setTextViewText(
-                R.id.status_pill,
-                if (over) "Lewat Rp ${rupiah.format(s.spent - s.budget)}"
-                else "Sisa Rp ${rupiah.format(s.budget - s.spent)}",
+                R.id.status,
+                if (over) "Lewat ${shortRupiah(s.spent - s.budget)}"
+                else "Sisa ${shortRupiah(s.budget - s.spent)}",
             )
-            setInt(
-                R.id.status_pill, "setBackgroundResource",
-                if (over) R.drawable.widget_pill_over else R.drawable.widget_pill_under,
-            )
-            setTextColor(R.id.status_pill, context.getColor(if (over) R.color.sunset_ink else R.color.sage_dark))
+            setTextColor(R.id.status, context.getColor(if (over) R.color.sunset_ink else R.color.sage_dark))
 
-            setViewVisibility(R.id.mood_tile, if (showKoko) View.VISIBLE else View.GONE)
+            setViewVisibility(R.id.koko, if (showKoko) View.VISIBLE else View.GONE)
             val (sprite, label) = when (mood) {
                 "grumpy" -> R.drawable.koko_grumpy to "Koko kesal"
                 "neutral" -> R.drawable.koko_neutral to "Koko khawatir"
@@ -66,15 +62,7 @@ class KokoWidgetProvider : HomeWidgetProvider() {
             }
             setImageViewResource(R.id.koko, sprite)
             setContentDescription(R.id.koko, label)
-            setTextViewText(R.id.mood_label, label)
-            setTextColor(
-                R.id.mood_label,
-                context.getColor(if (mood == "happy") R.color.sage_dark else R.color.sunset_ink),
-            )
 
-            setTextViewText(R.id.target_label, "Target harian Rp ${rupiah.format(s.budget)}")
-            setTextViewText(R.id.percent, "$percent%")
-            setTextColor(R.id.percent, context.getColor(if (over) R.color.sunset_ink else R.color.sage_dark))
             setViewVisibility(R.id.progress_under, if (over) View.GONE else View.VISIBLE)
             setViewVisibility(R.id.progress_over, if (over) View.VISIBLE else View.GONE)
             setProgressBar(R.id.progress_under, 100, percent.coerceIn(0, 100), false)
@@ -88,6 +76,14 @@ class KokoWidgetProvider : HomeWidgetProvider() {
                 HomeWidgetLaunchIntent.getActivity(context, QuickAddActivity::class.java),
             )
         }
+    }
+
+    /** 150000 → "150rb", 1250000 → "1,3jt" (fits the 2x2 status line). */
+    private fun shortRupiah(amount: Long): String = when {
+        amount >= 1_000_000 ->
+            String.format(Locale("id", "ID"), "%.1fjt", amount / 1_000_000.0).replace(",0jt", "jt")
+        amount >= 1_000 -> "${(amount / 1000.0).roundToInt()}rb"
+        else -> amount.toString()
     }
 
     /** Mirrors WidgetKeys in lib/core/home_widget_sync.dart. */

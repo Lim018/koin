@@ -133,7 +133,7 @@ class _SettingsPageState extends State<SettingsPage>
                           null,
                           null,
                           'Tampilkan Koko',
-                          'Maskot muncul di pojok widget',
+                          'Maskot muncul di widget',
                         ),
                         _toggle(
                           NativeSetting.moodFollows,
