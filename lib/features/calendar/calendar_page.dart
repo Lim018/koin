@@ -345,8 +345,8 @@ class _SelectedDay extends StatelessWidget {
     final status = total == null
         ? 'Belum ada catatan'
         : over
-        ? 'Lewat target ${formatRupiah(spent - dailyBudget)}'
-        : 'Hemat ${formatRupiah(dailyBudget - spent)} dari target';
+        ? '${formatRupiah(spent)} · lewat ${formatShort(spent - dailyBudget)}'
+        : '${formatRupiah(spent)} · hemat ${formatShort(dailyBudget - spent)}';
 
     return CozyCard(
       radius: 20,
@@ -388,17 +388,13 @@ class _SelectedDay extends StatelessWidget {
                 Text(
                   status,
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
                     color: over ? AppColors.sunsetInk : AppColors.sageDark,
                   ),
                 ),
               ],
             ),
-          ),
-          const SizedBox(width: 12),
-          Text(
-            formatRupiah(spent),
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
           ),
           if (onAdd != null) ...[
             const SizedBox(width: 8),
