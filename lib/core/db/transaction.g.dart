@@ -28,14 +28,20 @@ const TransactionSchema = CollectionSchema(
       name: r'isAutoLogged',
       type: IsarType.bool,
     ),
-    r'note': PropertySchema(id: 3, name: r'note', type: IsarType.string),
+    r'kind': PropertySchema(
+      id: 3,
+      name: r'kind',
+      type: IsarType.byte,
+      enumMap: _TransactionkindEnumValueMap,
+    ),
+    r'note': PropertySchema(id: 4, name: r'note', type: IsarType.string),
     r'timestamp': PropertySchema(
-      id: 4,
+      id: 5,
       name: r'timestamp',
       type: IsarType.dateTime,
     ),
     r'walletSource': PropertySchema(
-      id: 5,
+      id: 6,
       name: r'walletSource',
       type: IsarType.string,
     ),
@@ -96,9 +102,10 @@ void _transactionSerialize(
   writer.writeDouble(offsets[0], object.amount);
   writer.writeString(offsets[1], object.category);
   writer.writeBool(offsets[2], object.isAutoLogged);
-  writer.writeString(offsets[3], object.note);
-  writer.writeDateTime(offsets[4], object.timestamp);
-  writer.writeString(offsets[5], object.walletSource);
+  writer.writeByte(offsets[3], object.kind.index);
+  writer.writeString(offsets[4], object.note);
+  writer.writeDateTime(offsets[5], object.timestamp);
+  writer.writeString(offsets[6], object.walletSource);
 }
 
 Transaction _transactionDeserialize(
@@ -112,9 +119,12 @@ Transaction _transactionDeserialize(
   object.category = reader.readString(offsets[1]);
   object.id = id;
   object.isAutoLogged = reader.readBool(offsets[2]);
-  object.note = reader.readStringOrNull(offsets[3]);
-  object.timestamp = reader.readDateTime(offsets[4]);
-  object.walletSource = reader.readString(offsets[5]);
+  object.kind =
+      _TransactionkindValueEnumMap[reader.readByteOrNull(offsets[3])] ??
+      TransactionKind.expense;
+  object.note = reader.readStringOrNull(offsets[4]);
+  object.timestamp = reader.readDateTime(offsets[5]);
+  object.walletSource = reader.readString(offsets[6]);
   return object;
 }
 
@@ -132,15 +142,25 @@ P _transactionDeserializeProp<P>(
     case 2:
       return (reader.readBool(offset)) as P;
     case 3:
-      return (reader.readStringOrNull(offset)) as P;
+      return (_TransactionkindValueEnumMap[reader.readByteOrNull(offset)] ??
+              TransactionKind.expense)
+          as P;
     case 4:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 5:
+      return (reader.readDateTime(offset)) as P;
+    case 6:
       return (reader.readString(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }
 }
+
+const _TransactionkindEnumValueMap = {'expense': 0, 'income': 1};
+const _TransactionkindValueEnumMap = {
+  0: TransactionKind.expense,
+  1: TransactionKind.income,
+};
 
 Id _transactionGetId(Transaction object) {
   return object.id;
@@ -640,6 +660,65 @@ extension TransactionQueryFilter
     });
   }
 
+  QueryBuilder<Transaction, Transaction, QAfterFilterCondition> kindEqualTo(
+    TransactionKind value,
+  ) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'kind', value: value),
+      );
+    });
+  }
+
+  QueryBuilder<Transaction, Transaction, QAfterFilterCondition> kindGreaterThan(
+    TransactionKind value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'kind',
+          value: value,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Transaction, Transaction, QAfterFilterCondition> kindLessThan(
+    TransactionKind value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'kind',
+          value: value,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<Transaction, Transaction, QAfterFilterCondition> kindBetween(
+    TransactionKind lower,
+    TransactionKind upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'kind',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+        ),
+      );
+    });
+  }
+
   QueryBuilder<Transaction, Transaction, QAfterFilterCondition> noteIsNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
@@ -1046,6 +1125,18 @@ extension TransactionQuerySortBy
     });
   }
 
+  QueryBuilder<Transaction, Transaction, QAfterSortBy> sortByKind() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'kind', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Transaction, Transaction, QAfterSortBy> sortByKindDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'kind', Sort.desc);
+    });
+  }
+
   QueryBuilder<Transaction, Transaction, QAfterSortBy> sortByNote() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'note', Sort.asc);
@@ -1135,6 +1226,18 @@ extension TransactionQuerySortThenBy
     });
   }
 
+  QueryBuilder<Transaction, Transaction, QAfterSortBy> thenByKind() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'kind', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Transaction, Transaction, QAfterSortBy> thenByKindDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'kind', Sort.desc);
+    });
+  }
+
   QueryBuilder<Transaction, Transaction, QAfterSortBy> thenByNote() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'note', Sort.asc);
@@ -1195,6 +1298,12 @@ extension TransactionQueryWhereDistinct
     });
   }
 
+  QueryBuilder<Transaction, Transaction, QDistinct> distinctByKind() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'kind');
+    });
+  }
+
   QueryBuilder<Transaction, Transaction, QDistinct> distinctByNote({
     bool caseSensitive = true,
   }) {
@@ -1241,6 +1350,12 @@ extension TransactionQueryProperty
   QueryBuilder<Transaction, bool, QQueryOperations> isAutoLoggedProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'isAutoLogged');
+    });
+  }
+
+  QueryBuilder<Transaction, TransactionKind, QQueryOperations> kindProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'kind');
     });
   }
 

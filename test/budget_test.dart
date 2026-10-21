@@ -57,6 +57,19 @@ void main() {
     });
   });
 
+  test('income never counts as spending', () {
+    final salary = tx(DateTime(2026, 10, 21, 9), 5000000)
+      ..kind = TransactionKind.income;
+    final txs = [tx(DateTime(2026, 10, 21, 12), 45000), salary];
+    expect(totalOf(txs), 45000);
+    expect(incomeOf(txs), 5000000);
+    expect(dailyTotals(txs), {DateTime(2026, 10, 21): 45000});
+    // An income-only day has no spending entry, so it is not in the totals
+    // that drive the calendar dots and the daily coins.
+    expect(dailyTotals([salary]), isEmpty);
+    expect(moodFor(spent: totalOf(txs), budget: 200000), KokoMood.happy);
+  });
+
   test('weeklyBudget is 7 × daily (matches design: 200rb → 1,4jt)', () {
     expect(weeklyBudget(200000), 1400000);
   });

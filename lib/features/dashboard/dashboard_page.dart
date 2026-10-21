@@ -21,6 +21,7 @@ class DashboardPage extends ConsumerWidget {
     final todaySummary = ref.watch(todaySummaryProvider);
     final weekSummary = ref.watch(weekSummaryProvider);
     final transactions = ref.watch(transactionsProvider(dayRange(today)));
+    final month = ref.watch(transactionsProvider(monthRange(today)));
 
     return SafeArea(
       bottom: false,
@@ -49,6 +50,10 @@ class DashboardPage extends ConsumerWidget {
               child: Center(child: CircularProgressIndicator()),
             ),
           },
+          if (month case AsyncData(value: final m)) ...[
+            const SizedBox(height: 12),
+            _MonthFlow(income: incomeOf(m), spent: totalOf(m)),
+          ],
           const SizedBox(height: 24),
           _DiaryHeader(total: todaySummary.valueOrNull?.spent),
           const SizedBox(height: 10),
@@ -59,7 +64,7 @@ class DashboardPage extends ConsumerWidget {
               transactions: txs,
               emptyText:
                   'Belum ada catatan hari ini. Tekan + untuk mencatat '
-                  'pengeluaran.',
+                  'pengeluaran atau pemasukan.',
             ),
           ),
         ],
@@ -316,6 +321,83 @@ class _SpeechBubble extends StatelessWidget {
   }
 }
 
+/// This month's money in vs. out (income never affects Koko's budget).
+class _MonthFlow extends StatelessWidget {
+  const _MonthFlow({required this.income, required this.spent});
+
+  final double income;
+  final double spent;
+
+  @override
+  Widget build(BuildContext context) {
+    final net = income - spent;
+    return CozyCard(
+      radius: 20,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      child: Row(
+        children: [
+          Expanded(
+            child: _Flow(
+              label: 'Masuk bulan ini',
+              value: '+${formatRupiah(income)}',
+              color: AppColors.sageDark,
+            ),
+          ),
+          Expanded(
+            child: _Flow(
+              label: 'Keluar bulan ini',
+              value: '−${formatRupiah(spent)}',
+              color: AppColors.textPrimary,
+            ),
+          ),
+          Expanded(
+            child: _Flow(
+              label: 'Selisih',
+              value: '${net < 0 ? '−' : '+'}${formatRupiah(net.abs())}',
+              color: net < 0 ? AppColors.sunsetInk : AppColors.sageDark,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Flow extends StatelessWidget {
+  const _Flow({required this.label, required this.value, required this.color});
+
+  final String label;
+  final String value;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+        ),
+        const SizedBox(height: 2),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerLeft,
+          child: Text(
+            value,
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              color: color,
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _DiaryHeader extends StatelessWidget {
   const _DiaryHeader({required this.total});
 
@@ -334,7 +416,7 @@ class _DiaryHeader extends StatelessWidget {
         ),
         if (total != null)
           Text(
-            'Total ${formatRupiah(total!)}',
+            'Keluar ${formatRupiah(total!)}',
             style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
           ),
       ],

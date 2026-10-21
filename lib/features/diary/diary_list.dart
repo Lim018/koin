@@ -50,6 +50,7 @@ class _DiaryListState extends ConsumerState<DiaryList> {
             timestamp: t.timestamp,
             isAutoLogged: t.isAutoLogged,
             note: t.note,
+            kind: t.kind,
           ),
         ),
       ),
@@ -104,7 +105,7 @@ class _DiaryRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = transaction;
-    final category = ExpenseCategory.fromLabel(t.category);
+    final category = TxCategory.of(t);
     final subtitle = [
       t.category,
       t.walletSource,
@@ -176,11 +177,14 @@ class _DiaryRow extends StatelessWidget {
                 ),
               ),
               Text(
-                '−${formatRupiah(t.amount)}',
-                style: const TextStyle(
+                '${t.isIncome ? '+' : '−'}${formatRupiah(t.amount)}',
+                style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
-                  fontFeatures: [FontFeature.tabularFigures()],
+                  color: t.isIncome
+                      ? AppColors.sageDark
+                      : AppColors.textPrimary,
+                  fontFeatures: const [FontFeature.tabularFigures()],
                 ),
               ),
             ],

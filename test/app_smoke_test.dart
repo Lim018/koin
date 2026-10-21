@@ -7,6 +7,7 @@ import 'package:koin/core/budget/budget.dart';
 import 'package:koin/core/db/transaction.dart';
 import 'package:koin/core/db/user_state.dart';
 import 'package:koin/core/providers.dart';
+import 'package:koin/features/diary/diary_list.dart';
 import 'package:koin/ui/cozy.dart';
 
 void main() {
@@ -59,7 +60,13 @@ void main() {
     await pumpApp(tester, [tx(250000, 'Sepatu lari')]);
     expect(find.textContaining('Kesal', findRichText: true), findsOneWidget);
     expect(find.text('Sepatu lari'), findsOneWidget);
-    expect(find.text('−Rp 250.000'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(DiaryList),
+        matching: find.text('−Rp 250.000'),
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('every tab renders under its own header', (tester) async {
@@ -91,7 +98,7 @@ void main() {
     await pumpApp(tester, []);
     await tester.tap(find.byIcon(Icons.add_rounded));
     await tester.pump(const Duration(milliseconds: 600));
-    expect(find.text('Catat pengeluaran'), findsWidgets);
+    expect(find.text('Catat transaksi'), findsOneWidget);
     final save = find.widgetWithText(FilledButton, 'SIMPAN');
     expect(tester.widget<FilledButton>(save).onPressed, isNull);
 
@@ -106,7 +113,7 @@ void main() {
     await tester.tap(find.text('Nasi padang'));
     await tester.pump(const Duration(milliseconds: 600));
 
-    expect(find.text('Ubah pengeluaran'), findsOneWidget);
+    expect(find.text('Ubah catatan'), findsOneWidget);
     expect(find.widgetWithText(TextField, '45.000'), findsOneWidget);
     expect(find.widgetWithText(TextField, 'Nasi padang'), findsOneWidget);
     final save = find.widgetWithText(FilledButton, 'SIMPAN');
@@ -124,5 +131,35 @@ void main() {
 
     expect(find.text('0 koin'), findsOneWidget);
     expect(find.textContaining('Hari ini masih aman'), findsOneWidget);
+  });
+
+  testWidgets('income shows as +Rp and keeps Koko happy', (tester) async {
+    await pumpApp(tester, [
+      tx(5000000, 'Gaji Oktober')
+        ..category = 'Gaji'
+        ..kind = TransactionKind.income,
+      tx(45000, 'Nasi padang'),
+    ]);
+    expect(find.textContaining('Senang', findRichText: true), findsOneWidget);
+    expect(find.text('+Rp 5.000.000'), findsWidgets);
+    expect(find.text('Keluar Rp 45.000'), findsOneWidget);
+    expect(find.text('Masuk bulan ini'), findsOneWidget);
+  });
+
+  testWidgets('switching the sheet to income shows income categories', (
+    tester,
+  ) async {
+    await pumpApp(tester, []);
+    await tester.tap(find.byIcon(Icons.add_rounded));
+    // Two frames: the sheet is still sliding in after the first.
+    await tester.pump(const Duration(milliseconds: 600));
+    await tester.pump(const Duration(milliseconds: 600));
+    expect(find.text('🍔 Makan'), findsOneWidget);
+
+    await tester.tap(find.text('Pemasukan'));
+    await tester.pump();
+    expect(find.text('💼 Gaji'), findsOneWidget);
+    expect(find.text('🍔 Makan'), findsNothing);
+    expect(find.text('Masuk ke'), findsOneWidget);
   });
 }

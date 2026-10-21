@@ -10,8 +10,8 @@ import '../../core/format.dart';
 import '../../core/providers.dart';
 import '../../core/theme/app_colors.dart';
 
-/// Amount + category (+ wallet and note unless [compact]) entry form, shared
-/// by the in-app sheet and the home-screen quick-add pop-up.
+/// Amount + category (+ kind, wallet and note unless [compact]) entry form,
+/// shared by the in-app sheet and the home-screen quick-add pop-up.
 class TransactionForm extends ConsumerStatefulWidget {
   const TransactionForm({
     super.key,
@@ -34,7 +34,8 @@ class TransactionForm extends ConsumerStatefulWidget {
   /// Called after the transaction is written.
   final ValueChanged<double> onSaved;
 
-  /// Quick-add layout: only the first four categories, no wallet or note.
+  /// Quick-add layout: expenses only, the first four categories, no wallet
+  /// or note.
   final bool compact;
 
   @override
@@ -49,8 +50,9 @@ class _TransactionFormState extends ConsumerState<TransactionForm> {
     },
   );
   late final _note = TextEditingController(text: widget.editing?.note);
-  late var _category = switch (widget.editing) {
-    final e? => ExpenseCategory.fromLabel(e.category),
+  late var _kind = widget.editing?.kind ?? TransactionKind.expense;
+  late TxCategory _category = switch (widget.editing) {
+    final e? => TxCategory.of(e),
     null => widget.initial?.category ?? ExpenseCategory.makan,
   };
   late var _wallet =
@@ -91,6 +93,7 @@ class _TransactionFormState extends ConsumerState<TransactionForm> {
             ..id = e.id
             ..timestamp = e.timestamp
             ..isAutoLogged = e.isAutoLogged
+            ..kind = _kind
             ..amount = value
             ..category = _category.label
             ..walletSource = _wallet
@@ -104,6 +107,7 @@ class _TransactionFormState extends ConsumerState<TransactionForm> {
           timestamp: widget.initial?.timestamp ?? _timestampOn(widget.day),
           isAutoLogged: widget.initial != null,
           note: note.isEmpty ? null : note,
+          kind: _kind,
         );
       }
       widget.onSaved(value);
@@ -126,16 +130,40 @@ class _TransactionFormState extends ConsumerState<TransactionForm> {
     final text = Theme.of(context).textTheme;
     final canSave = (_value ?? 0) > 0 && !_saving;
     // Compact shows four chips, plus the pre-filled one if it is not among them.
-    final categories = widget.compact
+    final Iterable<TxCategory> categories = widget.compact
         ? ExpenseCategory.values.where(
             (c) => c.index < 4 || c == widget.initial?.category,
           )
-        : ExpenseCategory.values;
+        : TxCategory.forKind(_kind);
+    final income = _kind == TransactionKind.income;
+    // A detected payment is always money going out.
+    final canSwitchKind = !widget.compact && widget.initial == null;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        if (canSwitchKind) ...[
+          SegmentedButton<TransactionKind>(
+            showSelectedIcon: false,
+            segments: const [
+              ButtonSegment(
+                value: TransactionKind.expense,
+                label: Text('Pengeluaran'),
+              ),
+              ButtonSegment(
+                value: TransactionKind.income,
+                label: Text('Pemasukan'),
+              ),
+            ],
+            selected: {_kind},
+            onSelectionChanged: (s) => setState(() {
+              _kind = s.first;
+              _category = TxCategory.forKind(_kind).first;
+            }),
+          ),
+          const SizedBox(height: 16),
+        ],
         TextField(
           controller: _amount,
           // Editing opens on the whole entry, not straight into the keyboard.
@@ -188,7 +216,7 @@ class _TransactionFormState extends ConsumerState<TransactionForm> {
         ),
         if (!widget.compact) ...[
           const SizedBox(height: 16),
-          Text('Sumber dana', style: text.bodySmall),
+          Text(income ? 'Masuk ke' : 'Sumber dana', style: text.bodySmall),
           const SizedBox(height: 8),
           Wrap(
             spacing: 8,
@@ -208,9 +236,9 @@ class _TransactionFormState extends ConsumerState<TransactionForm> {
             controller: _note,
             maxLength: 60,
             textCapitalization: TextCapitalization.sentences,
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               labelText: 'Catatan (opsional)',
-              hintText: 'mis. Nasi padang',
+              hintText: income ? 'mis. Gaji Oktober' : 'mis. Nasi padang',
               counterText: '',
             ),
           ),
@@ -233,10 +261,10 @@ Future<void> showTransactionSheet(
   DateTime? day,
 }) {
   final title = switch ((editing, day)) {
-    (_?, _) => 'Ubah pengeluaran',
+    (_?, _) => 'Ubah catatan',
     (null, final d?) when dateOnly(d) != dateOnly(DateTime.now()) =>
       'Catat untuk ${DateFormat('d MMMM', 'id_ID').format(d)}',
-    _ => 'Catat pengeluaran',
+    _ => 'Catat transaksi',
   };
   return showModalBottomSheet(
     context: context,

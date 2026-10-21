@@ -76,6 +76,7 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
               today: today,
               selected: _selected,
               totals: dailyTotals(t),
+              income: incomeOf(t),
               dayTransactions: [
                 for (final x in t)
                   if (dateOnly(x.timestamp) == _selected) x,
@@ -103,6 +104,7 @@ class _Body extends StatelessWidget {
     required this.today,
     required this.selected,
     required this.totals,
+    required this.income,
     required this.dayTransactions,
     required this.dailyBudget,
     required this.coins,
@@ -112,7 +114,12 @@ class _Body extends StatelessWidget {
   final DateTime month;
   final DateTime today;
   final DateTime selected;
+
+  /// Spending per day.
   final Map<DateTime, double> totals;
+
+  /// The month's income.
+  final double income;
 
   /// The selected day's entries, newest first.
   final List<Transaction> dayTransactions;
@@ -199,7 +206,8 @@ class _Body extends StatelessWidget {
         _SelectedDay(
           day: selected,
           isToday: selected == today,
-          total: totals[selected],
+          // A day with only income still has entries: show Rp 0 spent.
+          total: totals[selected] ?? (dayTransactions.isEmpty ? null : 0),
           dailyBudget: dailyBudget,
           onAdd: selected.isAfter(today)
               ? null
@@ -214,6 +222,7 @@ class _Body extends StatelessWidget {
           month: month,
           today: today,
           total: totals.values.fold(0, (a, b) => a + b),
+          income: income,
           dailyBudget: dailyBudget,
           coins: coins,
         ),
@@ -419,6 +428,7 @@ class _MonthSummary extends StatelessWidget {
     required this.month,
     required this.today,
     required this.total,
+    required this.income,
     required this.dailyBudget,
     required this.coins,
   });
@@ -426,6 +436,7 @@ class _MonthSummary extends StatelessWidget {
   final DateTime month;
   final DateTime today;
   final double total;
+  final double income;
   final double dailyBudget;
   final int coins;
 
@@ -510,6 +521,26 @@ class _MonthSummary extends StatelessWidget {
               const SizedBox(width: 10),
               Expanded(
                 child: _Stat(label: 'Koin terkumpul', value: '$coins koin'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: _Stat(
+                  label: 'Pemasukan',
+                  value: '+${formatRupiah(income)}',
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _Stat(
+                  label: 'Selisih',
+                  value:
+                      '${income < total ? '−' : '+'}'
+                      '${formatRupiah((income - total).abs())}',
+                ),
               ),
             ],
           ),

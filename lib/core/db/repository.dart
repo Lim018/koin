@@ -26,6 +26,7 @@ class KoinRepository {
     DateTime? timestamp,
     bool isAutoLogged = false,
     String? note,
+    TransactionKind kind = TransactionKind.expense,
   }) {
     if (!(amount > 0)) {
       throw ArgumentError.value(amount, 'amount', 'must be positive');
@@ -36,7 +37,8 @@ class KoinRepository {
       ..walletSource = walletSource
       ..timestamp = timestamp ?? DateTime.now()
       ..isAutoLogged = isAutoLogged
-      ..note = note;
+      ..note = note
+      ..kind = kind;
     return _write(() => _isar.transactions.put(t));
   }
 

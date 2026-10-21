@@ -41,13 +41,19 @@ DateRange monthRange(DateTime t) =>
 
 double weeklyBudget(double dailyBudget) => dailyBudget * 7;
 
+/// Total spending. Income never counts against the budget, so every budget
+/// rule (Koko's mood, coins, the widget, calendar dots) goes through here.
 double totalOf(Iterable<Transaction> transactions) =>
-    transactions.fold(0, (sum, t) => sum + t.amount);
+    transactions.fold(0, (sum, t) => t.isIncome ? sum : sum + t.amount);
 
-/// Sums amounts per calendar day (keyed by local midnight).
+double incomeOf(Iterable<Transaction> transactions) =>
+    transactions.fold(0, (sum, t) => t.isIncome ? sum + t.amount : sum);
+
+/// Spending per calendar day (keyed by local midnight); income is skipped.
 Map<DateTime, double> dailyTotals(Iterable<Transaction> transactions) {
   final totals = <DateTime, double>{};
   for (final t in transactions) {
+    if (t.isIncome) continue;
     final key = dateOnly(t.timestamp);
     totals[key] = (totals[key] ?? 0) + t.amount;
   }
