@@ -21,8 +21,7 @@ ThemeData buildAppTheme() {
     useMaterial3: true,
     colorScheme: colorScheme,
     scaffoldBackgroundColor: AppColors.backgroundMid,
-    // Inter is bundled as an asset in a later step; until then the platform
-    // sans-serif is used, which matches the "modern crisp sans" requirement.
+    // Bundled in assets/fonts (SIL OFL, see Inter-OFL.txt).
     fontFamily: 'Inter',
     textTheme:
         const TextTheme(
