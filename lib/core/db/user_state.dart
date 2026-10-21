@@ -14,6 +14,10 @@ class UserState {
   late int savedCoins; // Currency for gamification/mascot room
   late DateTime lastUpdated;
 
+  /// Last day already evaluated for the daily coin reward (local midnight);
+  /// null until the first evaluation.
+  DateTime? coinsAwardedThrough;
+
   static const defaultDailyBudget = 200000.0;
 
   static UserState initial(DateTime now) => UserState()

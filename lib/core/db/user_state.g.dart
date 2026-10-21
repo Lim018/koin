@@ -17,18 +17,23 @@ const UserStateSchema = CollectionSchema(
   name: r'UserState',
   id: -3052082333501167064,
   properties: {
-    r'dailyBudgetTarget': PropertySchema(
+    r'coinsAwardedThrough': PropertySchema(
       id: 0,
+      name: r'coinsAwardedThrough',
+      type: IsarType.dateTime,
+    ),
+    r'dailyBudgetTarget': PropertySchema(
+      id: 1,
       name: r'dailyBudgetTarget',
       type: IsarType.double,
     ),
     r'lastUpdated': PropertySchema(
-      id: 1,
+      id: 2,
       name: r'lastUpdated',
       type: IsarType.dateTime,
     ),
     r'savedCoins': PropertySchema(
-      id: 2,
+      id: 3,
       name: r'savedCoins',
       type: IsarType.long,
     ),
@@ -64,9 +69,10 @@ void _userStateSerialize(
   List<int> offsets,
   Map<Type, List<int>> allOffsets,
 ) {
-  writer.writeDouble(offsets[0], object.dailyBudgetTarget);
-  writer.writeDateTime(offsets[1], object.lastUpdated);
-  writer.writeLong(offsets[2], object.savedCoins);
+  writer.writeDateTime(offsets[0], object.coinsAwardedThrough);
+  writer.writeDouble(offsets[1], object.dailyBudgetTarget);
+  writer.writeDateTime(offsets[2], object.lastUpdated);
+  writer.writeLong(offsets[3], object.savedCoins);
 }
 
 UserState _userStateDeserialize(
@@ -76,10 +82,11 @@ UserState _userStateDeserialize(
   Map<Type, List<int>> allOffsets,
 ) {
   final object = UserState();
-  object.dailyBudgetTarget = reader.readDouble(offsets[0]);
+  object.coinsAwardedThrough = reader.readDateTimeOrNull(offsets[0]);
+  object.dailyBudgetTarget = reader.readDouble(offsets[1]);
   object.id = id;
-  object.lastUpdated = reader.readDateTime(offsets[1]);
-  object.savedCoins = reader.readLong(offsets[2]);
+  object.lastUpdated = reader.readDateTime(offsets[2]);
+  object.savedCoins = reader.readLong(offsets[3]);
   return object;
 }
 
@@ -91,10 +98,12 @@ P _userStateDeserializeProp<P>(
 ) {
   switch (propertyId) {
     case 0:
-      return (reader.readDouble(offset)) as P;
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 1:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readDouble(offset)) as P;
     case 2:
+      return (reader.readDateTime(offset)) as P;
+    case 3:
       return (reader.readLong(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -195,6 +204,79 @@ extension UserStateQueryWhere
 
 extension UserStateQueryFilter
     on QueryBuilder<UserState, UserState, QFilterCondition> {
+  QueryBuilder<UserState, UserState, QAfterFilterCondition>
+  coinsAwardedThroughIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNull(property: r'coinsAwardedThrough'),
+      );
+    });
+  }
+
+  QueryBuilder<UserState, UserState, QAfterFilterCondition>
+  coinsAwardedThroughIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNotNull(property: r'coinsAwardedThrough'),
+      );
+    });
+  }
+
+  QueryBuilder<UserState, UserState, QAfterFilterCondition>
+  coinsAwardedThroughEqualTo(DateTime? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'coinsAwardedThrough', value: value),
+      );
+    });
+  }
+
+  QueryBuilder<UserState, UserState, QAfterFilterCondition>
+  coinsAwardedThroughGreaterThan(DateTime? value, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'coinsAwardedThrough',
+          value: value,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<UserState, UserState, QAfterFilterCondition>
+  coinsAwardedThroughLessThan(DateTime? value, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'coinsAwardedThrough',
+          value: value,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<UserState, UserState, QAfterFilterCondition>
+  coinsAwardedThroughBetween(
+    DateTime? lower,
+    DateTime? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'coinsAwardedThrough',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+        ),
+      );
+    });
+  }
+
   QueryBuilder<UserState, UserState, QAfterFilterCondition>
   dailyBudgetTargetEqualTo(double value, {double epsilon = Query.epsilon}) {
     return QueryBuilder.apply(this, (query) {
@@ -451,6 +533,19 @@ extension UserStateQueryLinks
     on QueryBuilder<UserState, UserState, QFilterCondition> {}
 
 extension UserStateQuerySortBy on QueryBuilder<UserState, UserState, QSortBy> {
+  QueryBuilder<UserState, UserState, QAfterSortBy> sortByCoinsAwardedThrough() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'coinsAwardedThrough', Sort.asc);
+    });
+  }
+
+  QueryBuilder<UserState, UserState, QAfterSortBy>
+  sortByCoinsAwardedThroughDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'coinsAwardedThrough', Sort.desc);
+    });
+  }
+
   QueryBuilder<UserState, UserState, QAfterSortBy> sortByDailyBudgetTarget() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'dailyBudgetTarget', Sort.asc);
@@ -491,6 +586,19 @@ extension UserStateQuerySortBy on QueryBuilder<UserState, UserState, QSortBy> {
 
 extension UserStateQuerySortThenBy
     on QueryBuilder<UserState, UserState, QSortThenBy> {
+  QueryBuilder<UserState, UserState, QAfterSortBy> thenByCoinsAwardedThrough() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'coinsAwardedThrough', Sort.asc);
+    });
+  }
+
+  QueryBuilder<UserState, UserState, QAfterSortBy>
+  thenByCoinsAwardedThroughDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'coinsAwardedThrough', Sort.desc);
+    });
+  }
+
   QueryBuilder<UserState, UserState, QAfterSortBy> thenByDailyBudgetTarget() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'dailyBudgetTarget', Sort.asc);
@@ -543,6 +651,13 @@ extension UserStateQuerySortThenBy
 
 extension UserStateQueryWhereDistinct
     on QueryBuilder<UserState, UserState, QDistinct> {
+  QueryBuilder<UserState, UserState, QDistinct>
+  distinctByCoinsAwardedThrough() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'coinsAwardedThrough');
+    });
+  }
+
   QueryBuilder<UserState, UserState, QDistinct> distinctByDailyBudgetTarget() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'dailyBudgetTarget');
@@ -567,6 +682,13 @@ extension UserStateQueryProperty
   QueryBuilder<UserState, int, QQueryOperations> idProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'id');
+    });
+  }
+
+  QueryBuilder<UserState, DateTime?, QQueryOperations>
+  coinsAwardedThroughProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'coinsAwardedThrough');
     });
   }
 

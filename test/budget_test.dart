@@ -60,4 +60,49 @@ void main() {
   test('weeklyBudget is 7 × daily (matches design: 200rb → 1,4jt)', () {
     expect(weeklyBudget(200000), 1400000);
   });
+
+  group('coinsEarned', () {
+    final totals = {
+      DateTime(2026, 10, 18): 150000.0, // under → +50
+      DateTime(2026, 10, 19): 200000.0, // exactly on target → +50
+      DateTime(2026, 10, 20): 350000.0, // over → 0
+      DateTime(2026, 10, 21): 10000.0, // today, not finished → excluded
+    };
+
+    test('rewards finished days within budget only', () {
+      expect(
+        coinsEarned(
+          totals: totals,
+          dailyBudget: 200000,
+          from: DateTime(2026, 10, 1),
+          until: DateTime(2026, 10, 21),
+        ),
+        2 * coinsPerDay,
+      );
+    });
+
+    test('respects the evaluated window', () {
+      expect(
+        coinsEarned(
+          totals: totals,
+          dailyBudget: 200000,
+          from: DateTime(2026, 10, 19),
+          until: DateTime(2026, 10, 20),
+        ),
+        coinsPerDay,
+      );
+    });
+
+    test('days without entries earn nothing', () {
+      expect(
+        coinsEarned(
+          totals: const {},
+          dailyBudget: 200000,
+          from: DateTime(2026, 10, 1),
+          until: DateTime(2026, 10, 21),
+        ),
+        0,
+      );
+    });
+  });
 }

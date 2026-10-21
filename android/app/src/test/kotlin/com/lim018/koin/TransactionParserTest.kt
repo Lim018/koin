@@ -55,4 +55,14 @@ class TransactionParserTest {
         assertEquals("Tagihan", TransactionParser.guessCategory("Token PLN 20 kWh"))
         assertEquals("Jajan", TransactionParser.guessCategory("Kopi Kenangan"))
     }
+
+    @Test
+    fun adbShellOnlyInDebugBuilds() {
+        val text = "Pembayaran berhasil Rp25.000 ke GoFood"
+        assertNull(TransactionParser.parse(TransactionParser.ADB_SHELL, text))
+        assertEquals(
+            DetectedTransaction(25_000, "Makan", "Uji ADB"),
+            TransactionParser.parse(TransactionParser.ADB_SHELL, text, allowAdbShell = true),
+        )
+    }
 }

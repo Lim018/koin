@@ -35,7 +35,16 @@ object TransactionParser {
         "com.shopee.id" to App(Source.EWALLET, "ShopeePay"),
     )
 
-    fun sourceOf(packageName: String): Source? = apps[packageName]?.source
+    /** `adb shell cmd notification post` posts as this package. */
+    const val ADB_SHELL = "com.android.shell"
+    private val adbTestApp = App(Source.GOPAY, "Uji ADB")
+
+    /** [allowAdbShell] is true only in debuggable builds (device testing). */
+    private fun appOf(packageName: String, allowAdbShell: Boolean): App? =
+        apps[packageName] ?: adbTestApp.takeIf { allowAdbShell && packageName == ADB_SHELL }
+
+    fun sourceOf(packageName: String, allowAdbShell: Boolean = false): Source? =
+        appOf(packageName, allowAdbShell)?.source
 
     // "Rp25.000", "Rp 25.000,00", "IDR 25,000.00"
     private val amountRegex =
@@ -64,8 +73,12 @@ object TransactionParser {
     )
 
     /** Null unless [text] from [packageName] describes an outgoing payment. */
-    fun parse(packageName: String, text: String): DetectedTransaction? {
-        val app = apps[packageName] ?: return null
+    fun parse(
+        packageName: String,
+        text: String,
+        allowAdbShell: Boolean = false,
+    ): DetectedTransaction? {
+        val app = appOf(packageName, allowAdbShell) ?: return null
         if (incoming.containsMatchIn(text) || !outgoing.containsMatchIn(text)) return null
         val amount = amountRegex.find(text)?.groupValues?.get(1)?.let(::parseAmount)
             ?: return null

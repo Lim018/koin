@@ -44,6 +44,10 @@ class DashboardPage extends ConsumerWidget {
                   ],
                 ),
               ),
+              _CoinChip(
+                coins: ref.watch(userStateProvider).valueOrNull?.savedCoins,
+              ),
+              const SizedBox(width: 8),
               IconButton(
                 tooltip: 'Otomatisasi',
                 onPressed: () => Navigator.of(context).push(
@@ -534,4 +538,78 @@ class _EmptyDiary extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Coin balance pill from the room design (pixel coin + count).
+class _CoinChip extends StatelessWidget {
+  const _CoinChip({required this.coins});
+
+  final int? coins;
+
+  @override
+  Widget build(BuildContext context) {
+    final coins = this.coins;
+    if (coins == null) return const SizedBox.shrink();
+    return Semantics(
+      label: 'Saldo $coins koin',
+      excludeSemantics: true,
+      child: Container(
+        height: 36,
+        padding: const EdgeInsets.fromLTRB(10, 0, 12, 0),
+        decoration: BoxDecoration(
+          color: AppColors.card,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: AppColors.cardBorder),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const CustomPaint(size: Size(16, 16), painter: _PixelCoin()),
+            const SizedBox(width: 6),
+            Text(
+              '$coins',
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                fontFeatures: [FontFeature.tabularFigures()],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PixelCoin extends CustomPainter {
+  const _PixelCoin();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final u = size.width / 8;
+    void px(List<(double, double, double, double)> rects, Color color) {
+      final paint = Paint()
+        ..color = color
+        ..isAntiAlias = false;
+      for (final (x, y, w, h) in rects) {
+        canvas.drawRect(Rect.fromLTWH(x * u, y * u, w * u, h * u), paint);
+      }
+    }
+
+    px([(2, 1, 4, 6), (1, 2, 6, 4)], AppColors.coin);
+    px([
+      (2, 0, 4, 1),
+      (1, 1, 1, 1),
+      (6, 1, 1, 1),
+      (0, 2, 1, 4),
+      (7, 2, 1, 4),
+      (1, 6, 1, 1),
+      (6, 6, 1, 1),
+      (2, 7, 4, 1),
+    ], AppColors.coinDark);
+    px([(3, 2, 1, 3)], const Color(0xFFFFF3C4));
+  }
+
+  @override
+  bool shouldRepaint(_PixelCoin old) => false;
 }

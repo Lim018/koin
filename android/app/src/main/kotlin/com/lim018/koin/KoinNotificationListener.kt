@@ -6,6 +6,7 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ApplicationInfo
 import android.net.Uri
 import android.os.Build
 import android.service.notification.NotificationListenerService
@@ -29,7 +30,8 @@ class KoinNotificationListener : NotificationListenerService() {
         val n = sbn.notification
         if (n.flags and Notification.FLAG_GROUP_SUMMARY != 0) return
 
-        val source = TransactionParser.sourceOf(sbn.packageName) ?: return
+        val debuggable = applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0
+        val source = TransactionParser.sourceOf(sbn.packageName, debuggable) ?: return
         val prefs = KoinPrefs.get(this)
         if (!KoinPrefs.sourceEnabled(prefs, source)) return
 
@@ -39,7 +41,7 @@ class KoinNotificationListener : NotificationListenerService() {
             extras.getCharSequence(Notification.EXTRA_BIG_TEXT)
                 ?: extras.getCharSequence(Notification.EXTRA_TEXT),
         ).joinToString(" · ")
-        val tx = TransactionParser.parse(sbn.packageName, text) ?: return
+        val tx = TransactionParser.parse(sbn.packageName, text, debuggable) ?: return
         if (!markHandled("${sbn.key}:${tx.amount}", sbn.postTime)) return
 
         val detected = detectedUri(tx, sbn.postTime)

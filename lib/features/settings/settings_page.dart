@@ -142,6 +142,21 @@ class _SettingsPageState extends State<SettingsPage>
                       ),
                     ],
                   ),
+                  if (AutomationPermissions.supported) ...[
+                    const SizedBox(height: 12),
+                    OutlinedButton.icon(
+                      onPressed: () => HomeWidget.requestPinWidget(
+                        qualifiedAndroidName: _widgetProvider,
+                      ),
+                      icon: const Icon(Icons.widgets_outlined),
+                      label: const Text('Pasang widget di beranda'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.sageDark,
+                        side: const BorderSide(color: AppColors.chipBorder),
+                        minimumSize: const Size.fromHeight(44),
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 16),
                   const Text(
                     'Koin tidak pernah mengirim isi notifikasi ke server. '

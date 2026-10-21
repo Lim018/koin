@@ -77,8 +77,48 @@ class KoinRepository {
     return _updateUserState((s) => s.dailyBudgetTarget = target);
   }
 
-  Future<void> addCoins(int coins) =>
-      _updateUserState((s) => s.savedCoins += coins);
+  /// Grants [coinsPerDay] for every finished day since the last evaluation
+  /// that stayed within budget. Idempotent: each day is evaluated once.
+  /// Returns the coins granted now.
+  Future<int> awardDailyCoins(DateTime now) async {
+    final today = dateOnly(now);
+    var awarded = 0;
+    await _write(() async {
+      final state =
+          await _isar.userStates.get(UserState.singletonId) ??
+          UserState.initial(now);
+      final through = state.coinsAwardedThrough;
+      final DateTime from;
+      if (through != null) {
+        from = DateTime(through.year, through.month, through.day + 1);
+      } else {
+        // First run: start at the oldest entry (none → nothing to reward).
+        final oldest = await _isar.transactions
+            .where()
+            .sortByTimestamp()
+            .findFirst();
+        from = oldest == null ? today : dateOnly(oldest.timestamp);
+      }
+      if (!from.isBefore(today) && through != null) return;
+
+      final txs = await _isar.transactions
+          .where()
+          .timestampBetween(from, today, includeUpper: false)
+          .findAll();
+      awarded = coinsEarned(
+        totals: dailyTotals(txs),
+        dailyBudget: state.dailyBudgetTarget,
+        from: from,
+        until: today,
+      );
+      state
+        ..savedCoins += awarded
+        ..coinsAwardedThrough = DateTime(today.year, today.month, today.day - 1)
+        ..lastUpdated = now;
+      await _isar.userStates.put(state);
+    });
+    return awarded;
+  }
 
   Future<void> _updateUserState(void Function(UserState) change) {
     return _write(() async {

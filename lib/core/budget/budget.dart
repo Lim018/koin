@@ -53,3 +53,23 @@ Map<DateTime, double> dailyTotals(Iterable<Transaction> transactions) {
   }
   return totals;
 }
+
+/// Reward for each finished day that has entries and stays within budget.
+const coinsPerDay = 50;
+
+/// Coins earned for the finished days in `[from, until)`. Days without any
+/// entry earn nothing, so not using the app is never rewarded.
+int coinsEarned({
+  required Map<DateTime, double> totals,
+  required double dailyBudget,
+  required DateTime from,
+  required DateTime until,
+}) {
+  var days = 0;
+  for (final MapEntry(key: day, value: spent) in totals.entries) {
+    if (!day.isBefore(from) && day.isBefore(until) && spent <= dailyBudget) {
+      days++;
+    }
+  }
+  return days * coinsPerDay;
+}

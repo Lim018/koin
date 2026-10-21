@@ -14,7 +14,11 @@ import 'features/automation/auto_log.dart';
 import 'features/quick_add/quick_add_app.dart';
 
 Future<void> main() async {
-  await _run(const KoinApp());
+  final container = await _run(const KoinApp());
+  // Daily coin reward: on launch and whenever the date rolls over.
+  final repo = container.read(repositoryProvider);
+  repo.awardDailyCoins(DateTime.now());
+  container.listen(todayProvider, (_, today) => repo.awardDailyCoins(today));
   // Lets [YA, CATAT] on auto-read notifications run autoLogCallback in the
   // background; the handle survives restarts once registered.
   if (Platform.isAndroid) {
@@ -34,7 +38,7 @@ Future<void> quickAddMain(List<String> args) => _run(
   ),
 );
 
-Future<void> _run(Widget app) async {
+Future<ProviderContainer> _run(Widget app) async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('id_ID');
   final container = ProviderContainer(
@@ -43,4 +47,5 @@ Future<void> _run(Widget app) async {
   // Refresh the widget on launch too, so it never shows yesterday's total.
   syncHomeWidget(container.read(repositoryProvider));
   runApp(UncontrolledProviderScope(container: container, child: app));
+  return container;
 }
