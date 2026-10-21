@@ -3,10 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/budget/budget.dart';
+import '../../core/db/transaction.dart';
 import '../../core/format.dart';
 import '../../core/providers.dart';
 import '../../core/theme/app_colors.dart';
 import '../../ui/cozy.dart';
+import '../add/transaction_form.dart';
+import '../diary/diary_list.dart';
 import '../shell/home_shell.dart';
 
 /// Cells for a Monday-first month grid: leading `null`s, then each day.
@@ -73,6 +76,10 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
               today: today,
               selected: _selected,
               totals: dailyTotals(t),
+              dayTransactions: [
+                for (final x in t)
+                  if (dateOnly(x.timestamp) == _selected) x,
+              ],
               dailyBudget: u.dailyBudgetTarget,
               coins: u.savedCoins,
               onSelect: (d) => setState(() => _selected = d),
@@ -96,6 +103,7 @@ class _Body extends StatelessWidget {
     required this.today,
     required this.selected,
     required this.totals,
+    required this.dayTransactions,
     required this.dailyBudget,
     required this.coins,
     required this.onSelect,
@@ -105,6 +113,9 @@ class _Body extends StatelessWidget {
   final DateTime today;
   final DateTime selected;
   final Map<DateTime, double> totals;
+
+  /// The selected day's entries, newest first.
+  final List<Transaction> dayTransactions;
   final double dailyBudget;
   final int coins;
   final ValueChanged<DateTime> onSelect;
@@ -190,7 +201,14 @@ class _Body extends StatelessWidget {
           isToday: selected == today,
           total: totals[selected],
           dailyBudget: dailyBudget,
+          onAdd: selected.isAfter(today)
+              ? null
+              : () => showTransactionSheet(context, day: selected),
         ),
+        if (dayTransactions.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          DiaryList(transactions: dayTransactions),
+        ],
         const SizedBox(height: 12),
         _MonthSummary(
           month: month,
@@ -309,12 +327,16 @@ class _SelectedDay extends StatelessWidget {
     required this.isToday,
     required this.total,
     required this.dailyBudget,
+    required this.onAdd,
   });
 
   final DateTime day;
   final bool isToday;
   final double? total;
   final double dailyBudget;
+
+  /// Records an entry on [day]; null for future days.
+  final VoidCallback? onAdd;
 
   @override
   Widget build(BuildContext context) {
@@ -378,6 +400,18 @@ class _SelectedDay extends StatelessWidget {
             formatRupiah(spent),
             style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
           ),
+          if (onAdd != null) ...[
+            const SizedBox(width: 8),
+            IconButton.filledTonal(
+              tooltip: 'Catat di tanggal ini',
+              onPressed: onAdd,
+              icon: const Icon(Icons.add_rounded),
+              style: IconButton.styleFrom(
+                backgroundColor: AppColors.sageLight,
+                foregroundColor: AppColors.sageDark,
+              ),
+            ),
+          ],
         ],
       ),
     );

@@ -3,13 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/budget/budget.dart';
-import '../../core/categories.dart';
-import '../../core/db/transaction.dart';
 import '../../core/format.dart';
 import '../../core/providers.dart';
 import '../../core/theme/app_colors.dart';
 import '../../ui/cozy.dart';
 import '../../ui/koko_sprite.dart';
+import '../diary/diary_list.dart';
 import '../shell/home_shell.dart';
 
 /// "Kamar Koko": the mascot's room on top, today's diary below.
@@ -56,7 +55,12 @@ class DashboardPage extends ConsumerWidget {
           transactions.when(
             loading: () => const SizedBox.shrink(),
             error: (e, _) => ErrorText(e),
-            data: (txs) => _DiaryList(transactions: txs),
+            data: (txs) => DiaryList(
+              transactions: txs,
+              emptyText:
+                  'Belum ada catatan hari ini. Tekan + untuk mencatat '
+                  'pengeluaran.',
+            ),
           ),
         ],
       ),
@@ -334,181 +338,6 @@ class _DiaryHeader extends StatelessWidget {
             style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
           ),
       ],
-    );
-  }
-}
-
-/// Today's entries; swipe left to delete (with undo).
-class _DiaryList extends ConsumerStatefulWidget {
-  const _DiaryList({required this.transactions});
-
-  final List<Transaction> transactions;
-
-  @override
-  ConsumerState<_DiaryList> createState() => _DiaryListState();
-}
-
-class _DiaryListState extends ConsumerState<_DiaryList> {
-  /// Hidden immediately on swipe: Dismissible requires the row to leave the
-  /// tree synchronously, before the Isar stream re-emits.
-  final _removed = <int>{};
-
-  Future<void> _delete(Transaction t) async {
-    setState(() => _removed.add(t.id));
-    final repo = ref.read(repositoryProvider);
-    final messenger = ScaffoldMessenger.of(context);
-    try {
-      await repo.deleteTransaction(t.id);
-    } catch (e) {
-      if (mounted) setState(() => _removed.remove(t.id));
-      messenger.showSnackBar(SnackBar(content: Text('Gagal menghapus: $e')));
-      return;
-    }
-    messenger.showSnackBar(
-      SnackBar(
-        content: Text('${formatRupiah(t.amount)} dihapus'),
-        action: SnackBarAction(
-          label: 'URUNGKAN',
-          onPressed: () => repo.addTransaction(
-            amount: t.amount,
-            category: t.category,
-            walletSource: t.walletSource,
-            timestamp: t.timestamp,
-            isAutoLogged: t.isAutoLogged,
-            note: t.note,
-          ),
-        ),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final txs = [
-      for (final t in widget.transactions)
-        if (!_removed.contains(t.id)) t,
-    ];
-    if (txs.isEmpty) return const _EmptyDiary();
-    return CozyCard(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Column(
-        children: [
-          for (final (i, t) in txs.indexed) ...[
-            if (i > 0)
-              const Divider(
-                height: 1,
-                indent: 16,
-                endIndent: 16,
-                color: AppColors.track,
-              ),
-            _DiaryRow(transaction: t, onDismissed: () => _delete(t)),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _DiaryRow extends StatelessWidget {
-  const _DiaryRow({required this.transaction, required this.onDismissed});
-
-  final Transaction transaction;
-  final VoidCallback onDismissed;
-
-  @override
-  Widget build(BuildContext context) {
-    final t = transaction;
-    final category = ExpenseCategory.fromLabel(t.category);
-    final subtitle = [
-      t.category,
-      t.walletSource,
-      if (t.isAutoLogged) 'Otomatis',
-    ].join(' · ');
-
-    return Dismissible(
-      key: ValueKey(t.id),
-      direction: DismissDirection.endToStart,
-      background: Container(
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 20),
-        color: AppColors.sunsetLight,
-        child: const Icon(Icons.delete_outline, color: AppColors.sunsetInk),
-      ),
-      onDismissed: (_) => onDismissed(),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        child: Row(
-          children: [
-            SizedBox(
-              width: 44,
-              child: Text(
-                DateFormat.Hm().format(t.timestamp),
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: AppColors.textSecondary,
-                  fontFeatures: [FontFeature.tabularFigures()],
-                ),
-              ),
-            ),
-            Container(
-              width: 36,
-              height: 36,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: category.tint,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Text(category.emoji, style: const TextStyle(fontSize: 17)),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    t.note ?? t.category,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  Text(
-                    subtitle,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Text(
-              '−${formatRupiah(t.amount)}',
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-                fontFeatures: [FontFeature.tabularFigures()],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _EmptyDiary extends StatelessWidget {
-  const _EmptyDiary();
-
-  @override
-  Widget build(BuildContext context) {
-    return const CozyCard(
-      child: Text(
-        'Belum ada catatan hari ini. Tekan + untuk mencatat pengeluaran.',
-        style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
-      ),
     );
   }
 }

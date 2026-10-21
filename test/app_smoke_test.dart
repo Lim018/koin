@@ -100,4 +100,16 @@ void main() {
     expect(find.text('25.000'), findsOneWidget);
     expect(tester.widget<FilledButton>(save).onPressed, isNotNull);
   });
+
+  testWidgets('tapping a diary entry opens it for editing', (tester) async {
+    await pumpApp(tester, [tx(45000, 'Nasi padang')]);
+    await tester.tap(find.text('Nasi padang'));
+    await tester.pump(const Duration(milliseconds: 600));
+
+    expect(find.text('Ubah pengeluaran'), findsOneWidget);
+    expect(find.widgetWithText(TextField, '45.000'), findsOneWidget);
+    expect(find.widgetWithText(TextField, 'Nasi padang'), findsOneWidget);
+    final save = find.widgetWithText(FilledButton, 'SIMPAN');
+    expect(tester.widget<FilledButton>(save).onPressed, isNotNull);
+  });
 }

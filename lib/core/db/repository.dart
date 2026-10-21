@@ -40,6 +40,14 @@ class KoinRepository {
     return _write(() => _isar.transactions.put(t));
   }
 
+  /// Overwrites the stored row with the same [Transaction.id].
+  Future<void> updateTransaction(Transaction t) {
+    if (!(t.amount > 0)) {
+      throw ArgumentError.value(t.amount, 'amount', 'must be positive');
+    }
+    return _write(() => _isar.transactions.put(t));
+  }
+
   Future<bool> deleteTransaction(int id) =>
       _write(() => _isar.transactions.delete(id));
 

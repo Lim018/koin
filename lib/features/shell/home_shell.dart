@@ -41,7 +41,7 @@ class _HomeShellState extends State<HomeShell> {
         child: _GlassNavBar(
           index: _index,
           onSelect: (i) => setState(() => _index = i),
-          onAdd: () => showAddTransactionSheet(context),
+          onAdd: () => showTransactionSheet(context),
         ),
       ),
     );

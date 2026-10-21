@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
+import '../../core/budget/budget.dart';
 import '../../core/categories.dart';
+import '../../core/db/transaction.dart';
 import '../../core/detected_payment.dart';
 import '../../core/format.dart';
 import '../../core/providers.dart';
@@ -15,10 +18,18 @@ class TransactionForm extends ConsumerStatefulWidget {
     required this.onSaved,
     this.compact = false,
     this.initial,
+    this.editing,
+    this.day,
   });
 
   /// Pre-fill from an auto-read notification ([UBAH]); saved as auto-logged.
   final DetectedPayment? initial;
+
+  /// Existing entry to change; keeps its id, time and auto-logged flag.
+  final Transaction? editing;
+
+  /// Records a new entry on this (past) day instead of now.
+  final DateTime? day;
 
   /// Called after the transaction is written.
   final ValueChanged<double> onSaved;
@@ -32,11 +43,23 @@ class TransactionForm extends ConsumerStatefulWidget {
 
 class _TransactionFormState extends ConsumerState<TransactionForm> {
   late final _amount = TextEditingController(
-    text: widget.initial == null ? '' : formatThousands(widget.initial!.amount),
+    text: switch (widget.editing?.amount ?? widget.initial?.amount) {
+      final a? => formatThousands(a),
+      null => '',
+    },
   );
-  final _note = TextEditingController();
-  late var _category = widget.initial?.category ?? ExpenseCategory.makan;
-  late var _wallet = widget.initial?.wallet ?? walletSources.first;
+  late final _note = TextEditingController(text: widget.editing?.note);
+  late var _category = switch (widget.editing) {
+    final e? => ExpenseCategory.fromLabel(e.category),
+    null => widget.initial?.category ?? ExpenseCategory.makan,
+  };
+  late var _wallet =
+      widget.editing?.walletSource ??
+      widget.initial?.wallet ??
+      walletSources.first;
+
+  /// Keeps an unusual stored wallet (e.g. from an old entry) selectable.
+  late final _wallets = {...walletSources, _wallet}.toList();
   var _saving = false;
 
   @override
@@ -61,22 +84,41 @@ class _TransactionFormState extends ConsumerState<TransactionForm> {
     final messenger = ScaffoldMessenger.of(context);
     try {
       final note = _note.text.trim();
-      await ref
-          .read(repositoryProvider)
-          .addTransaction(
-            amount: value,
-            category: _category.label,
-            walletSource: _wallet,
-            timestamp: widget.initial?.timestamp,
-            isAutoLogged: widget.initial != null,
-            note: note.isEmpty ? null : note,
-          );
+      final repo = ref.read(repositoryProvider);
+      if (widget.editing case final e?) {
+        await repo.updateTransaction(
+          Transaction()
+            ..id = e.id
+            ..timestamp = e.timestamp
+            ..isAutoLogged = e.isAutoLogged
+            ..amount = value
+            ..category = _category.label
+            ..walletSource = _wallet
+            ..note = note.isEmpty ? null : note,
+        );
+      } else {
+        await repo.addTransaction(
+          amount: value,
+          category: _category.label,
+          walletSource: _wallet,
+          timestamp: widget.initial?.timestamp ?? _timestampOn(widget.day),
+          isAutoLogged: widget.initial != null,
+          note: note.isEmpty ? null : note,
+        );
+      }
       widget.onSaved(value);
     } catch (e) {
       if (!mounted) return;
       setState(() => _saving = false);
       messenger.showSnackBar(SnackBar(content: Text('Gagal menyimpan: $e')));
     }
+  }
+
+  /// Now's time of day on [day] (null for today), so entries keep order.
+  static DateTime? _timestampOn(DateTime? day) {
+    final now = DateTime.now();
+    if (day == null || dateOnly(day) == dateOnly(now)) return null;
+    return DateTime(day.year, day.month, day.day, now.hour, now.minute);
   }
 
   @override
@@ -96,7 +138,8 @@ class _TransactionFormState extends ConsumerState<TransactionForm> {
       children: [
         TextField(
           controller: _amount,
-          autofocus: true,
+          // Editing opens on the whole entry, not straight into the keyboard.
+          autofocus: widget.editing == null,
           keyboardType: TextInputType.number,
           inputFormatters: const [RupiahInputFormatter()],
           textInputAction: TextInputAction.done,
@@ -151,7 +194,7 @@ class _TransactionFormState extends ConsumerState<TransactionForm> {
             spacing: 8,
             runSpacing: 8,
             children: [
-              for (final w in walletSources)
+              for (final w in _wallets)
                 ChoiceChip(
                   label: Text(w),
                   selected: w == _wallet,
@@ -182,7 +225,19 @@ class _TransactionFormState extends ConsumerState<TransactionForm> {
   }
 }
 
-Future<void> showAddTransactionSheet(BuildContext context) {
+/// The in-app entry sheet: a new entry (today, or on [day]) or, with
+/// [editing], changes to an existing one.
+Future<void> showTransactionSheet(
+  BuildContext context, {
+  Transaction? editing,
+  DateTime? day,
+}) {
+  final title = switch ((editing, day)) {
+    (_?, _) => 'Ubah pengeluaran',
+    (null, final d?) when dateOnly(d) != dateOnly(DateTime.now()) =>
+      'Catat untuk ${DateFormat('d MMMM', 'id_ID').format(d)}',
+    _ => 'Catat pengeluaran',
+  };
   return showModalBottomSheet(
     context: context,
     isScrollControlled: true,
@@ -215,17 +270,22 @@ Future<void> showAddTransactionSheet(BuildContext context) {
               ),
             ),
             const SizedBox(height: 16),
-            Text(
-              'Catat pengeluaran',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
+            Text(title, style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 16),
             TransactionForm(
+              editing: editing,
+              day: day,
               onSaved: (value) {
                 final messenger = ScaffoldMessenger.of(context);
                 Navigator.of(context).pop();
                 messenger.showSnackBar(
-                  SnackBar(content: Text('${formatRupiah(value)} tercatat')),
+                  SnackBar(
+                    content: Text(
+                      editing == null
+                          ? '${formatRupiah(value)} tercatat'
+                          : 'Perubahan disimpan',
+                    ),
+                  ),
                 );
               },
             ),
