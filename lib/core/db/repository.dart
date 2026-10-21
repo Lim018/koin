@@ -6,9 +6,18 @@ import 'user_state.dart';
 
 /// The only place that reads or writes Isar.
 class KoinRepository {
-  KoinRepository(this._isar);
+  KoinRepository(this._isar, {this.onChanged});
 
   final Isar _isar;
+
+  /// Runs after every successful write (keeps the home widget in sync).
+  final Future<void> Function(KoinRepository repo)? onChanged;
+
+  Future<T> _write<T>(Future<T> Function() body) async {
+    final result = await _isar.writeTxn(body);
+    await onChanged?.call(this);
+    return result;
+  }
 
   Future<int> addTransaction({
     required double amount,
@@ -28,11 +37,11 @@ class KoinRepository {
       ..timestamp = timestamp ?? DateTime.now()
       ..isAutoLogged = isAutoLogged
       ..note = note;
-    return _isar.writeTxn(() => _isar.transactions.put(t));
+    return _write(() => _isar.transactions.put(t));
   }
 
   Future<bool> deleteTransaction(int id) =>
-      _isar.writeTxn(() => _isar.transactions.delete(id));
+      _write(() => _isar.transactions.delete(id));
 
   /// Transactions in `[range.start, range.end)`, newest first, re-emitted on
   /// every change.
@@ -42,6 +51,20 @@ class KoinRepository {
       .timestampBetween(range.start, range.end, includeUpper: false)
       .sortByTimestampDesc()
       .watch(fireImmediately: true);
+
+  /// Today's total and the daily target, read once.
+  Future<({double spent, double budget})> todaySnapshot() async {
+    final range = dayRange(DateTime.now());
+    final txs = await _isar.transactions
+        .where()
+        .timestampBetween(range.start, range.end, includeUpper: false)
+        .findAll();
+    final user = await _isar.userStates.get(UserState.singletonId);
+    return (
+      spent: totalOf(txs),
+      budget: (user ?? UserState.initial(DateTime.now())).dailyBudgetTarget,
+    );
+  }
 
   Stream<UserState> watchUserState() => _isar.userStates
       .watchObject(UserState.singletonId, fireImmediately: true)
@@ -58,7 +81,7 @@ class KoinRepository {
       _updateUserState((s) => s.savedCoins += coins);
 
   Future<void> _updateUserState(void Function(UserState) change) {
-    return _isar.writeTxn(() async {
+    return _write(() async {
       final now = DateTime.now();
       final state =
           await _isar.userStates.get(UserState.singletonId) ??

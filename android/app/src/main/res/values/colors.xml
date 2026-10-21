@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Mirrors lib/core/theme/app_colors.dart -->
+<resources>
+    <color name="text_primary">#2A211B</color>
+    <color name="text_secondary">#7A6A5E</color>
+    <color name="text_on_chip">#6B5A4E</color>
+    <color name="sage">#557A47</color>
+    <color name="sage_dark">#3F5E33</color>
+    <color name="sage_light">#EAF1E4</color>
+    <color name="sage_soft">#7FA06E</color>
+    <color name="sunset_soft">#E8875A</color>
+    <color name="sunset_light">#FCE6D7</color>
+    <color name="sunset_ink">#A94F28</color>
+    <color name="track">#142A211B</color>
+</resources>

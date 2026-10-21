@@ -7,6 +7,7 @@ import 'budget/budget.dart';
 import 'db/repository.dart';
 import 'db/transaction.dart';
 import 'db/user_state.dart';
+import 'home_widget_sync.dart';
 
 /// Opened in `main()` and injected via `ProviderScope.overrides`.
 final isarProvider = Provider<Isar>(
@@ -14,7 +15,7 @@ final isarProvider = Provider<Isar>(
 );
 
 final repositoryProvider = Provider<KoinRepository>(
-  (ref) => KoinRepository(ref.watch(isarProvider)),
+  (ref) => KoinRepository(ref.watch(isarProvider), onChanged: syncHomeWidget),
 );
 
 /// Today's date (local midnight); recomputes itself when the day changes so
