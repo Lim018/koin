@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:isar_community/isar.dart';
 
@@ -15,39 +17,44 @@ final repositoryProvider = Provider<KoinRepository>(
   (ref) => KoinRepository(ref.watch(isarProvider)),
 );
 
+/// Today's date (local midnight); recomputes itself when the day changes so
+/// "today" screens roll over even if the app stays open.
+final todayProvider = Provider<DateTime>((ref) {
+  final now = DateTime.now();
+  final untilTomorrow = dayRange(now).end.difference(now);
+  final timer = Timer(
+    untilTomorrow + const Duration(seconds: 1),
+    ref.invalidateSelf,
+  );
+  ref.onDispose(timer.cancel);
+  return dateOnly(now);
+});
+
 final userStateProvider = StreamProvider<UserState>(
   (ref) => ref.watch(repositoryProvider).watchUserState(),
 );
 
-final todayTransactionsProvider = StreamProvider<List<Transaction>>(
-  (ref) =>
-      ref.watch(repositoryProvider).watchTransactions(dayRange(DateTime.now())),
-);
+/// Live transactions in a date range, newest first.
+final transactionsProvider = StreamProvider.autoDispose
+    .family<List<Transaction>, DateRange>(
+      (ref, range) => ref.watch(repositoryProvider).watchTransactions(range),
+    );
 
-final weekTransactionsProvider = StreamProvider<List<Transaction>>(
-  (ref) =>
-      ref.watch(repositoryProvider).watchTransactions(weekRange(DateTime.now())),
-);
-
-typedef BudgetSummary = ({
-  double spent,
-  double budget,
-  KokoMood mood,
-});
+typedef BudgetSummary = ({double spent, double budget, KokoMood mood});
 
 /// Today's spending vs. the daily target; drives Koko's mood.
-final todaySummaryProvider = Provider<AsyncValue<BudgetSummary>>(
+final todaySummaryProvider = Provider.autoDispose<AsyncValue<BudgetSummary>>(
   (ref) => _summarize(
-    ref.watch(todayTransactionsProvider),
+    ref.watch(transactionsProvider(dayRange(ref.watch(todayProvider)))),
     ref.watch(userStateProvider),
     (u) => u.dailyBudgetTarget,
   ),
 );
 
 /// This week's spending vs. 7 × the daily target.
-final weekSummaryProvider = Provider<AsyncValue<BudgetSummary>>(
+final weekSummaryProvider = Provider.autoDispose<AsyncValue<BudgetSummary>>(
   (ref) => _summarize(
-    ref.watch(weekTransactionsProvider),
+    ref.watch(transactionsProvider(weekRange(ref.watch(todayProvider)))),
     ref.watch(userStateProvider),
     (u) => weeklyBudget(u.dailyBudgetTarget),
   ),
@@ -65,10 +72,10 @@ AsyncValue<BudgetSummary> _summarize(
       mood: moodFor(spent: totalOf(t), budget: budgetOf(u)),
     )),
     (AsyncError(:final error, :final stackTrace), _) ||
-    (_, AsyncError(:final error, :final stackTrace)) => AsyncError(
-      error,
-      stackTrace,
-    ),
+    (
+      _,
+      AsyncError(:final error, :final stackTrace),
+    ) => AsyncError(error, stackTrace),
     _ => const AsyncLoading(),
   };
 }

@@ -3,18 +3,19 @@ import 'package:flutter/material.dart';
 import 'app_colors.dart';
 
 ThemeData buildAppTheme() {
-  final colorScheme = ColorScheme.fromSeed(
-    seedColor: AppColors.sage,
-    brightness: Brightness.light,
-  ).copyWith(
-    primary: AppColors.sage,
-    onPrimary: Colors.white,
-    secondary: AppColors.sunset,
-    onSecondary: Colors.white,
-    surface: AppColors.card,
-    onSurface: AppColors.textPrimary,
-    error: AppColors.sunset,
-  );
+  final colorScheme =
+      ColorScheme.fromSeed(
+        seedColor: AppColors.sage,
+        brightness: Brightness.light,
+      ).copyWith(
+        primary: AppColors.sage,
+        onPrimary: Colors.white,
+        secondary: AppColors.sunset,
+        onSecondary: Colors.white,
+        surface: AppColors.card,
+        onSurface: AppColors.textPrimary,
+        error: AppColors.sunset,
+      );
 
   return ThemeData(
     useMaterial3: true,
@@ -23,29 +24,30 @@ ThemeData buildAppTheme() {
     // Inter is bundled as an asset in a later step; until then the platform
     // sans-serif is used, which matches the "modern crisp sans" requirement.
     fontFamily: 'Inter',
-    textTheme: const TextTheme(
-      headlineMedium: TextStyle(
-        fontSize: 24,
-        fontWeight: FontWeight.w700,
-        letterSpacing: -0.5,
-      ),
-      displaySmall: TextStyle(
-        fontSize: 32,
-        fontWeight: FontWeight.w800,
-        letterSpacing: -0.6,
-        fontFeatures: [FontFeature.tabularFigures()],
-      ),
-      titleMedium: TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
-      bodyMedium: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-      bodySmall: TextStyle(
-        fontSize: 12,
-        fontWeight: FontWeight.w500,
-        color: AppColors.textSecondary,
-      ),
-    ).apply(
-      bodyColor: AppColors.textPrimary,
-      displayColor: AppColors.textPrimary,
-    ),
+    textTheme:
+        const TextTheme(
+          headlineMedium: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.w700,
+            letterSpacing: -0.5,
+          ),
+          displaySmall: TextStyle(
+            fontSize: 32,
+            fontWeight: FontWeight.w800,
+            letterSpacing: -0.6,
+            fontFeatures: [FontFeature.tabularFigures()],
+          ),
+          titleMedium: TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+          bodyMedium: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+          bodySmall: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: AppColors.textSecondary,
+          ),
+        ).apply(
+          bodyColor: AppColors.textPrimary,
+          displayColor: AppColors.textPrimary,
+        ),
     cardTheme: CardThemeData(
       color: AppColors.card,
       elevation: 0,

@@ -24,10 +24,15 @@ abstract final class AppColors {
   static const sage = Color(0xFF557A47);
   static const sageDark = Color(0xFF3F5E33);
   static const sageLight = Color(0xFFEAF1E4);
+  static const sageSoft = Color(0xFF7FA06E); // dots, bars
 
   // Over budget: soft sunset orange (never harsh red).
   static const sunset = Color(0xFFD9734E);
-  static const sunsetLight = Color(0xFFFCE8DC);
+  static const sunsetSoft = Color(0xFFE8875A); // dots, bars
+  static const sunsetLight = Color(0xFFFCE6D7);
+  static const sunsetInk = Color(0xFFA94F28); // text on sunsetLight
+
+  static const track = Color(0xFFF1ECE5); // progress tracks, dividers
 
   // Gamification.
   static const coin = Color(0xFFEDC25E);

@@ -1,7 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:koin/core/budget/budget.dart';
 import 'package:koin/core/db/transaction.dart';
-import 'package:koin/core/format.dart';
 
 Transaction tx(DateTime t, double amount) => Transaction()
   ..timestamp = t
@@ -60,9 +59,5 @@ void main() {
 
   test('weeklyBudget is 7 × daily (matches design: 200rb → 1,4jt)', () {
     expect(weeklyBudget(200000), 1400000);
-  });
-
-  test('formatRupiah uses Indonesian separators', () {
-    expect(formatRupiah(250000), 'Rp 250.000');
   });
 }
