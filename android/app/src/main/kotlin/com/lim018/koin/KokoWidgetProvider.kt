@@ -26,12 +26,20 @@ class KokoWidgetProvider : HomeWidgetProvider() {
         widgetData: SharedPreferences,
     ) {
         val summary = Summary.read(widgetData)
+        val showKoko = widgetData.getBoolean(KoinPrefs.SHOW_KOKO, true)
+        val moodFollows = widgetData.getBoolean(KoinPrefs.MOOD_FOLLOWS, true)
         for (id in appWidgetIds) {
-            appWidgetManager.updateAppWidget(id, render(context, summary))
+            appWidgetManager.updateAppWidget(id, render(context, summary, showKoko, moodFollows))
         }
     }
 
-    private fun render(context: Context, s: Summary): RemoteViews {
+    private fun render(
+        context: Context,
+        s: Summary,
+        showKoko: Boolean,
+        moodFollows: Boolean,
+    ): RemoteViews {
+        val mood = if (moodFollows) s.mood else "happy"
         val rupiah = NumberFormat.getIntegerInstance(Locale("id", "ID"))
         val over = s.spent > s.budget
         val percent = if (s.budget > 0) (s.spent * 100.0 / s.budget).roundToInt() else 0
@@ -50,7 +58,8 @@ class KokoWidgetProvider : HomeWidgetProvider() {
             )
             setTextColor(R.id.status_pill, context.getColor(if (over) R.color.sunset_ink else R.color.sage_dark))
 
-            val (sprite, label) = when (s.mood) {
+            setViewVisibility(R.id.mood_tile, if (showKoko) View.VISIBLE else View.GONE)
+            val (sprite, label) = when (mood) {
                 "grumpy" -> R.drawable.koko_grumpy to "Koko kesal"
                 "neutral" -> R.drawable.koko_neutral to "Koko khawatir"
                 else -> R.drawable.koko_happy to "Koko senang"
@@ -60,7 +69,7 @@ class KokoWidgetProvider : HomeWidgetProvider() {
             setTextViewText(R.id.mood_label, label)
             setTextColor(
                 R.id.mood_label,
-                context.getColor(if (s.mood == "happy") R.color.sage_dark else R.color.sunset_ink),
+                context.getColor(if (mood == "happy") R.color.sage_dark else R.color.sunset_ink),
             )
 
             setTextViewText(R.id.target_label, "Target harian Rp ${rupiah.format(s.budget)}")

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../core/detected_payment.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme.dart';
 import '../add/transaction_form.dart';
@@ -8,7 +9,9 @@ import '../add/transaction_form.dart';
 /// The pop-up shown over the home screen by QuickAddActivity: a floating
 /// card in the top half, leaving the bottom half to the system keyboard.
 class QuickAddApp extends StatelessWidget {
-  const QuickAddApp({super.key});
+  const QuickAddApp({super.key, this.prefill});
+
+  final DetectedPayment? prefill;
 
   @override
   Widget build(BuildContext context) {
@@ -17,13 +20,15 @@ class QuickAddApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: buildAppTheme(),
       color: Colors.transparent,
-      home: const QuickAddScreen(),
+      home: QuickAddScreen(prefill: prefill),
     );
   }
 }
 
 class QuickAddScreen extends StatelessWidget {
-  const QuickAddScreen({super.key});
+  const QuickAddScreen({super.key, this.prefill});
+
+  final DetectedPayment? prefill;
 
   /// Finishes the Android activity, returning to the home screen.
   static void close() => SystemNavigator.pop();
@@ -73,7 +78,9 @@ class QuickAddScreen extends StatelessWidget {
                         children: [
                           Expanded(
                             child: Text(
-                              'Catat pengeluaran',
+                              prefill == null
+                                  ? 'Catat pengeluaran'
+                                  : 'Cek transaksi ${prefill!.wallet}',
                               style: text.titleMedium,
                             ),
                           ),
@@ -85,7 +92,11 @@ class QuickAddScreen extends StatelessWidget {
                         ],
                       ),
                       const SizedBox(height: 4),
-                      TransactionForm(compact: true, onSaved: (_) => close()),
+                      TransactionForm(
+                        compact: true,
+                        initial: prefill,
+                        onSaved: (_) => close(),
+                      ),
                     ],
                   ),
                 ),

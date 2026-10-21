@@ -10,6 +10,7 @@ import '../../core/providers.dart';
 import '../../core/theme/app_colors.dart';
 import '../../ui/cozy.dart';
 import '../../ui/koko_sprite.dart';
+import '../settings/settings_page.dart';
 import '../shell/home_shell.dart';
 
 /// "Kamar Koko": the mascot's room on top, today's diary below.
@@ -29,11 +30,36 @@ class DashboardPage extends ConsumerWidget {
       child: ListView(
         padding: const EdgeInsets.fromLTRB(20, 20, 20, navBarClearance),
         children: [
-          Text(
-            DateFormat('EEEE, d MMMM', 'id_ID').format(today),
-            style: text.bodySmall,
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      DateFormat('EEEE, d MMMM', 'id_ID').format(today),
+                      style: text.bodySmall,
+                    ),
+                    Text('Halo lagi', style: text.headlineMedium),
+                  ],
+                ),
+              ),
+              IconButton(
+                tooltip: 'Otomatisasi',
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(builder: (_) => const SettingsPage()),
+                ),
+                icon: const Icon(
+                  Icons.tune_rounded,
+                  color: AppColors.textPrimary,
+                ),
+                style: IconButton.styleFrom(
+                  backgroundColor: AppColors.card,
+                  side: const BorderSide(color: AppColors.cardBorder),
+                ),
+              ),
+            ],
           ),
-          Text('Halo lagi', style: text.headlineMedium),
           const SizedBox(height: 16),
           switch ((todaySummary, weekSummary)) {
             (AsyncData(value: final d), AsyncData(value: final w)) => _RoomCard(

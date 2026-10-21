@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/categories.dart';
+import '../../core/detected_payment.dart';
 import '../../core/format.dart';
 import '../../core/providers.dart';
 import '../../core/theme/app_colors.dart';
@@ -13,7 +14,11 @@ class TransactionForm extends ConsumerStatefulWidget {
     super.key,
     required this.onSaved,
     this.compact = false,
+    this.initial,
   });
+
+  /// Pre-fill from an auto-read notification ([UBAH]); saved as auto-logged.
+  final DetectedPayment? initial;
 
   /// Called after the transaction is written.
   final ValueChanged<double> onSaved;
@@ -26,10 +31,12 @@ class TransactionForm extends ConsumerStatefulWidget {
 }
 
 class _TransactionFormState extends ConsumerState<TransactionForm> {
-  final _amount = TextEditingController();
+  late final _amount = TextEditingController(
+    text: widget.initial == null ? '' : formatThousands(widget.initial!.amount),
+  );
   final _note = TextEditingController();
-  var _category = ExpenseCategory.makan;
-  var _wallet = walletSources.first;
+  late var _category = widget.initial?.category ?? ExpenseCategory.makan;
+  late var _wallet = widget.initial?.wallet ?? walletSources.first;
   var _saving = false;
 
   @override
@@ -60,6 +67,8 @@ class _TransactionFormState extends ConsumerState<TransactionForm> {
             amount: value,
             category: _category.label,
             walletSource: _wallet,
+            timestamp: widget.initial?.timestamp,
+            isAutoLogged: widget.initial != null,
             note: note.isEmpty ? null : note,
           );
       widget.onSaved(value);
@@ -74,8 +83,11 @@ class _TransactionFormState extends ConsumerState<TransactionForm> {
   Widget build(BuildContext context) {
     final text = Theme.of(context).textTheme;
     final canSave = (_value ?? 0) > 0 && !_saving;
+    // Compact shows four chips, plus the pre-filled one if it is not among them.
     final categories = widget.compact
-        ? ExpenseCategory.values.take(4)
+        ? ExpenseCategory.values.where(
+            (c) => c.index < 4 || c == widget.initial?.category,
+          )
         : ExpenseCategory.values;
 
     return Column(
