@@ -112,4 +112,17 @@ void main() {
     final save = find.widgetWithText(FilledButton, 'SIMPAN');
     expect(tester.widget<FilledButton>(save).onPressed, isNotNull);
   });
+
+  testWidgets('coin chip explains how coins are earned', (tester) async {
+    await pumpApp(tester, [tx(45000, 'Nasi padang')]);
+    await tester.tap(
+      find.byWidgetPredicate(
+        (w) => w is Semantics && w.properties.label == 'Saldo 0 koin',
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 600));
+
+    expect(find.text('0 koin'), findsOneWidget);
+    expect(find.textContaining('Hari ini masih aman'), findsOneWidget);
+  });
 }

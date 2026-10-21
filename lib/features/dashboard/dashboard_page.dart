@@ -342,7 +342,8 @@ class _DiaryHeader extends StatelessWidget {
   }
 }
 
-/// Coin balance pill from the room design (pixel coin + count).
+/// Coin balance pill from the room design (pixel coin + count); tap for
+/// how coins are earned.
 class _CoinChip extends StatelessWidget {
   const _CoinChip({required this.coins});
 
@@ -354,31 +355,139 @@ class _CoinChip extends StatelessWidget {
     if (coins == null) return const SizedBox.shrink();
     return Semantics(
       label: 'Saldo $coins koin',
+      button: true,
       excludeSemantics: true,
-      child: Container(
-        height: 36,
-        padding: const EdgeInsets.fromLTRB(10, 0, 12, 0),
-        decoration: BoxDecoration(
-          color: AppColors.card,
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: AppColors.cardBorder),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const CustomPaint(size: Size(16, 16), painter: _PixelCoin()),
-            const SizedBox(width: 6),
-            Text(
-              '$coins',
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-                fontFeatures: [FontFeature.tabularFigures()],
+      child: InkWell(
+        borderRadius: BorderRadius.circular(999),
+        onTap: () => _showCoinInfo(context, coins),
+        child: Container(
+          height: 36,
+          padding: const EdgeInsets.fromLTRB(10, 0, 12, 0),
+          decoration: BoxDecoration(
+            color: AppColors.card,
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: AppColors.cardBorder),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const CustomPaint(size: Size(16, 16), painter: _PixelCoin()),
+              const SizedBox(width: 6),
+              Text(
+                '$coins',
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  fontFeatures: [FontFeature.tabularFigures()],
+                ),
               ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+Future<void> _showCoinInfo(BuildContext context, int coins) {
+  return showModalBottomSheet(
+    context: context,
+    useSafeArea: true,
+    backgroundColor: AppColors.card,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+    ),
+    builder: (context) => const Padding(
+      padding: EdgeInsets.fromLTRB(20, 12, 20, 24),
+      child: _CoinInfo(),
+    ),
+  );
+}
+
+/// What coins are for and whether today is on track to earn them.
+class _CoinInfo extends ConsumerWidget {
+  const _CoinInfo();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final coins = ref.watch(userStateProvider).valueOrNull?.savedCoins ?? 0;
+    final today = ref.watch(todaySummaryProvider).valueOrNull;
+    final (todayText, onTrack) = switch (today) {
+      null => ('', true),
+      (spent: 0, budget: _, mood: _) => (
+        'Belum ada catatan hari ini. Catat pengeluaranmu supaya hari ini '
+            'bisa dihitung.',
+        false,
+      ),
+      final t when isOverBudget(spent: t.spent, budget: t.budget) => (
+        'Hari ini sudah lewat target, jadi belum dapat koin. Besok coba '
+            'lagi, ya!',
+        false,
+      ),
+      final t => (
+        'Hari ini masih aman. Tetap di bawah '
+            '${formatRupiah(t.budget)} sampai tengah malam untuk dapat '
+            '+$coinsPerDay koin.',
+        true,
+      ),
+    };
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Center(
+          child: Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: AppColors.chipBorder,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            const CustomPaint(size: Size(28, 28), painter: _PixelCoin()),
+            const SizedBox(width: 10),
+            Text(
+              '$coins koin',
+              style: Theme.of(context).textTheme.headlineMedium,
             ),
           ],
         ),
-      ),
+        const SizedBox(height: 12),
+        const Text(
+          'Dapat +$coinsPerDay koin untuk setiap hari yang ada catatannya dan '
+          'pengeluarannya tidak lewat target harian. Koin dihitung setelah '
+          'hari berakhir.',
+          style: TextStyle(fontSize: 14, height: 1.45),
+        ),
+        if (todayText.isNotEmpty) ...[
+          const SizedBox(height: 14),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: onTrack ? AppColors.sageLight : AppColors.sunsetLight,
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Text(
+              todayText,
+              style: TextStyle(
+                fontSize: 13,
+                height: 1.4,
+                color: onTrack ? AppColors.sageDark : AppColors.sunsetInk,
+              ),
+            ),
+          ),
+        ],
+        const SizedBox(height: 14),
+        const Text(
+          'Segera: tukar koin di Toko Koko untuk menghias kamarnya.',
+          style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+        ),
+      ],
     );
   }
 }
