@@ -335,6 +335,7 @@ class _MonthFlow extends StatelessWidget {
       radius: 20,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       child: Row(
+        spacing: 12,
         children: [
           Expanded(
             child: _Flow(
