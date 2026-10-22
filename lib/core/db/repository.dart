@@ -1,6 +1,7 @@
 import 'package:isar_community/isar.dart';
 
 import '../budget/budget.dart';
+import 'account.dart';
 import 'transaction.dart';
 import 'user_state.dart';
 
@@ -75,6 +76,53 @@ class KoinRepository {
       budget: (user ?? UserState.initial(DateTime.now())).dailyBudgetTarget,
     );
   }
+
+  /// Accounts in the order they were added.
+  Stream<List<Account>> watchAccounts() =>
+      _isar.accounts.where().watch(fireImmediately: true);
+
+  /// Seeds [Account.defaults] on first launch so entries have somewhere to go.
+  Future<void> ensureDefaultAccounts() async {
+    if (await _isar.accounts.count() > 0) return;
+    await _write(() => _isar.accounts.putAll(Account.defaults()));
+  }
+
+  /// Adds or updates [account]. Renaming moves the account's existing entries
+  /// along, since transactions refer to it by name.
+  Future<void> saveAccount(Account account) {
+    final name = account.name.trim();
+    if (name.isEmpty || name.length > 30) {
+      throw ArgumentError.value(account.name, 'name', 'must be 1–30 chars');
+    }
+    account.name = name;
+    return _write(() async {
+      final clash = await _isar.accounts.getByName(name);
+      if (clash != null && clash.id != account.id) {
+        throw ArgumentError.value(name, 'name', 'sudah dipakai');
+      }
+      final previous = await _isar.accounts.get(account.id);
+      if (previous != null && previous.name != name) {
+        final moved = await _isar.transactions
+            .filter()
+            .walletSourceEqualTo(previous.name)
+            .findAll();
+        for (final t in moved) {
+          t.walletSource = name;
+        }
+        await _isar.transactions.putAll(moved);
+      }
+      await _isar.accounts.put(account);
+    });
+  }
+
+  /// Removes the account but keeps its entries. The last account cannot be
+  /// deleted, so the entry form always has a wallet to offer.
+  Future<void> deleteAccount(int id) => _write(() async {
+    if (await _isar.accounts.count() <= 1) {
+      throw StateError('Minimal harus ada satu rekening');
+    }
+    await _isar.accounts.delete(id);
+  });
 
   Stream<UserState> watchUserState() => _isar.userStates
       .watchObject(UserState.singletonId, fireImmediately: true)

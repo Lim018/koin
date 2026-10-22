@@ -159,3 +159,52 @@ class PageHeader extends StatelessWidget {
     );
   }
 }
+
+/// Rounded bottom sheet with a drag handle and [title] over [child]; scrolls
+/// and lifts above the keyboard.
+Future<T?> showCozySheet<T>(
+  BuildContext context, {
+  required String title,
+  required Widget child,
+}) {
+  return showModalBottomSheet<T>(
+    context: context,
+    isScrollControlled: true,
+    // Android 15+ is edge-to-edge: keep the sheet below the status bar.
+    useSafeArea: true,
+    backgroundColor: AppColors.card,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+    ),
+    builder: (context) => Padding(
+      padding: EdgeInsets.fromLTRB(
+        20,
+        12,
+        20,
+        20 + MediaQuery.viewInsetsOf(context).bottom,
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.chipBorder,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(title, style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 16),
+            child,
+          ],
+        ),
+      ),
+    ),
+  );
+}

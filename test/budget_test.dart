@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:koin/core/budget/budget.dart';
+import 'package:koin/core/db/account.dart';
 import 'package:koin/core/db/transaction.dart';
 
 Transaction tx(DateTime t, double amount) => Transaction()
@@ -69,6 +70,21 @@ void main() {
     expect(dailyTotals([salary]), isEmpty);
     expect(moodFor(spent: totalOf(txs), budget: 200000), KokoMood.happy);
   });
+
+  test(
+    'account balance adds income and subtracts spending on that account',
+    () {
+      final bank = Account()
+        ..name = 'BCA'
+        ..openingBalance = 1000000;
+      final salary = tx(DateTime(2026, 10, 21), 5000000)
+        ..kind = TransactionKind.income
+        ..walletSource = 'BCA';
+      final lunch = tx(DateTime(2026, 10, 21), 45000)..walletSource = 'BCA';
+      final cash = tx(DateTime(2026, 10, 21), 20000); // other account
+      expect(bank.balance([salary, lunch, cash]), 5955000);
+    },
+  );
 
   test('weeklyBudget is 7 × daily (matches design: 200rb → 1,4jt)', () {
     expect(weeklyBudget(200000), 1400000);

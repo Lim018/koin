@@ -61,5 +61,3 @@ enum IncomeCategory implements TxCategory {
   static IncomeCategory fromLabel(String label) =>
       values.firstWhere((c) => c.label == label, orElse: () => lainnya);
 }
-
-const walletSources = ['Cash', 'GoPay', 'OVO', 'M-Banking'];

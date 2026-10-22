@@ -26,7 +26,12 @@ class DashboardPage extends ConsumerWidget {
     return SafeArea(
       bottom: false,
       child: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, navBarClearance),
+        padding: const EdgeInsets.fromLTRB(
+          20,
+          20,
+          20,
+          navBarClearance + writeButtonClearance,
+        ),
         children: [
           PageHeader(
             context: DateFormat('EEEE, d MMMM', 'id_ID').format(today),
@@ -63,7 +68,7 @@ class DashboardPage extends ConsumerWidget {
             data: (txs) => DiaryList(
               transactions: txs,
               emptyText:
-                  'Belum ada catatan hari ini. Tekan + untuk mencatat '
+                  'Belum ada catatan hari ini. Tekan ✏️ untuk mencatat '
                   'pengeluaran atau pemasukan.',
             ),
           ),

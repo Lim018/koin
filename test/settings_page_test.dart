@@ -9,7 +9,7 @@ import 'package:koin/features/settings/settings_page.dart';
 
 void main() {
   testWidgets('toggles read defaults and persist changes', (tester) async {
-    // Tall enough that the whole "Atur" list is built at once.
+    // Tall enough that the whole "Profil" list is built at once.
     tester.view.physicalSize = const Size(1170, 4200);
     tester.view.devicePixelRatio = 3;
     addTearDown(tester.view.reset);

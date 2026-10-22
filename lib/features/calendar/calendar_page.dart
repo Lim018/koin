@@ -23,14 +23,17 @@ List<DateTime?> monthGrid(DateTime month) {
 }
 
 /// "Monthly Diary": pocket-planner grid with under/over-budget dots.
-class CalendarPage extends ConsumerStatefulWidget {
-  const CalendarPage({super.key});
+class CalendarView extends ConsumerStatefulWidget {
+  const CalendarView({super.key, required this.viewSwitch});
+
+  /// Kalender/Grafik toggle shown under the header (see StatsPage).
+  final Widget viewSwitch;
 
   @override
-  ConsumerState<CalendarPage> createState() => _CalendarPageState();
+  ConsumerState<CalendarView> createState() => _CalendarViewState();
 }
 
-class _CalendarPageState extends ConsumerState<CalendarPage> {
+class _CalendarViewState extends ConsumerState<CalendarView> {
   late DateTime _month = DateTime(DateTime.now().year, DateTime.now().month);
   late DateTime _selected = dateOnly(DateTime.now());
 
@@ -55,7 +58,7 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
         children: [
           PageHeader(
             context: DateFormat('MMMM yyyy', 'id_ID').format(_month),
-            title: 'Kalender',
+            title: 'Statistik',
             actions: [
               _RoundButton(
                 icon: Icons.chevron_left_rounded,
@@ -69,6 +72,8 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
               ),
             ],
           ),
+          const SizedBox(height: 16),
+          widget.viewSwitch,
           const SizedBox(height: 16),
           switch ((txs, user)) {
             (AsyncData(value: final t), AsyncData(value: final u)) => _Body(

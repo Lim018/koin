@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:koin/app.dart';
 import 'package:koin/core/budget/budget.dart';
+import 'package:koin/core/db/account.dart';
 import 'package:koin/core/db/transaction.dart';
 import 'package:koin/core/db/user_state.dart';
 import 'package:koin/core/providers.dart';
@@ -23,6 +24,11 @@ void main() {
           userStateProvider.overrideWith(
             (ref) => Stream.value(UserState.initial(DateTime.now())),
           ),
+          accountsProvider.overrideWith(
+            (ref) => Stream.value([
+              for (final (i, a) in Account.defaults().indexed) a..id = i + 1,
+            ]),
+          ),
           transactionsProvider.overrideWith(
             (ref, DateRange range) => Stream.value([
               for (final t in txs)
@@ -33,6 +39,16 @@ void main() {
           ),
         ],
         child: const KoinApp(),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+  }
+
+  Future<void> openTab(WidgetTester tester, String label) async {
+    await tester.tap(
+      find.byWidgetPredicate(
+        (w) => w is Semantics && w.properties.label == label,
       ),
     );
     await tester.pump();
@@ -72,31 +88,55 @@ void main() {
   testWidgets('every tab renders under its own header', (tester) async {
     await pumpApp(tester, [tx(45000, 'Nasi padang')]);
 
-    await tester.tap(find.byIcon(Icons.calendar_month_rounded));
-    await tester.pump();
-    await tester.pump();
-    expect(find.widgetWithText(PageHeader, 'Kalender'), findsOneWidget);
+    // Calendar and chart share the "Statistik" tab.
+    await openTab(tester, 'Statistik');
+    expect(find.widgetWithText(PageHeader, 'Statistik'), findsOneWidget);
     expect(find.text('Total Pengeluaran Bulan Ini'), findsOneWidget);
+    await tester.tap(find.text('Grafik'));
+    await tester.pump();
+    expect(find.text('Total Pengeluaran Bulan Ini'), findsNothing);
+    expect(find.widgetWithText(PageHeader, 'Statistik'), findsOneWidget);
 
-    await tester.tap(find.byIcon(Icons.bar_chart_rounded));
-    await tester.pump();
-    await tester.pump();
-    expect(find.widgetWithText(PageHeader, 'Insight'), findsOneWidget);
+    await openTab(tester, 'Bank');
+    expect(find.widgetWithText(PageHeader, 'Bank'), findsOneWidget);
+    expect(find.text('Total saldo'), findsOneWidget);
+    expect(find.text('M-Banking'), findsOneWidget);
 
-    // The daily target lives in "Atur", next to the other settings.
-    await tester.tap(find.byIcon(Icons.tune_rounded));
-    await tester.pump();
-    await tester.pump();
-    expect(find.widgetWithText(PageHeader, 'Atur'), findsOneWidget);
+    // The daily target lives in "Profil", next to the other settings.
+    await openTab(tester, 'Profil');
+    expect(find.widgetWithText(PageHeader, 'Profil'), findsOneWidget);
     expect(find.text('Target hemat harian'), findsOneWidget);
     expect(find.text('Simpan target'), findsOneWidget);
+  });
+
+  testWidgets('the pencil only floats on Beranda', (tester) async {
+    await pumpApp(tester, []);
+    expect(find.byTooltip('Catat transaksi'), findsOneWidget);
+    await openTab(tester, 'Bank');
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.byTooltip('Catat transaksi'), findsNothing);
+  });
+
+  testWidgets('bank balances follow the entries on each account', (
+    tester,
+  ) async {
+    await pumpApp(tester, [
+      tx(5000000, 'Gaji')
+        ..kind = TransactionKind.income
+        ..walletSource = 'M-Banking',
+      tx(45000, 'Nasi padang'),
+    ]);
+    await openTab(tester, 'Bank');
+    expect(find.text('Rp 5.000.000'), findsOneWidget);
+    expect(find.text('−Rp 45.000'), findsOneWidget);
+    expect(find.text('Rp 4.955.000'), findsOneWidget);
   });
 
   testWidgets('+ opens the add sheet with save disabled until an amount', (
     tester,
   ) async {
     await pumpApp(tester, []);
-    await tester.tap(find.byIcon(Icons.add_rounded));
+    await tester.tap(find.byTooltip('Catat transaksi'));
     await tester.pump(const Duration(milliseconds: 600));
     expect(find.text('Catat transaksi'), findsOneWidget);
     final save = find.widgetWithText(FilledButton, 'SIMPAN');
@@ -150,7 +190,7 @@ void main() {
     tester,
   ) async {
     await pumpApp(tester, []);
-    await tester.tap(find.byIcon(Icons.add_rounded));
+    await tester.tap(find.byTooltip('Catat transaksi'));
     // Two frames: the sheet is still sliding in after the first.
     await tester.pump(const Duration(milliseconds: 600));
     await tester.pump(const Duration(milliseconds: 600));

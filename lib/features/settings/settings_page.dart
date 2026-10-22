@@ -5,11 +5,13 @@ import '../../core/native_settings.dart';
 import '../../core/theme/app_colors.dart';
 import '../../ui/cozy.dart';
 import '../shell/home_shell.dart';
+import 'profile_card.dart';
 import 'target_card.dart';
 
 const _widgetProvider = 'com.lim018.koin.KokoWidgetProvider';
 
-/// "Atur" tab: daily target, notification auto-read and widget appearance.
+/// "Profil" tab: profile summary, daily target, notification auto-read and
+/// widget appearance.
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
 
@@ -77,7 +79,9 @@ class _SettingsPageState extends State<SettingsPage>
       child: ListView(
         padding: const EdgeInsets.fromLTRB(20, 20, 20, navBarClearance),
         children: [
-          const PageHeader(context: 'Pengaturan', title: 'Atur'),
+          const PageHeader(context: 'Akun & pengaturan', title: 'Profil'),
+          const SizedBox(height: 16),
+          const ProfileCard(),
           const _SectionLabel('TARGET HARIAN'),
           const TargetCard(),
           const _SectionLabel('CATAT OTOMATIS'),

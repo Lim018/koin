@@ -44,6 +44,7 @@ Future<ProviderContainer> _run(Widget app) async {
   final container = ProviderContainer(
     overrides: [isarProvider.overrideWithValue(await openDatabase())],
   );
+  await container.read(repositoryProvider).ensureDefaultAccounts();
   // Refresh the widget on launch too, so it never shows yesterday's total.
   syncHomeWidget(container.read(repositoryProvider));
   runApp(UncontrolledProviderScope(container: container, child: app));

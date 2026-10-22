@@ -12,14 +12,17 @@ import '../shell/home_shell.dart';
 enum _Period { week, month }
 
 /// Spending per day vs. the daily target.
-class InsightPage extends ConsumerStatefulWidget {
-  const InsightPage({super.key});
+class InsightView extends ConsumerStatefulWidget {
+  const InsightView({super.key, required this.viewSwitch});
+
+  /// Kalender/Grafik toggle shown under the header (see StatsPage).
+  final Widget viewSwitch;
 
   @override
-  ConsumerState<InsightPage> createState() => _InsightPageState();
+  ConsumerState<InsightView> createState() => _InsightViewState();
 }
 
-class _InsightPageState extends ConsumerState<InsightPage> {
+class _InsightViewState extends ConsumerState<InsightView> {
   var _period = _Period.week;
 
   @override
@@ -38,7 +41,7 @@ class _InsightPageState extends ConsumerState<InsightPage> {
         children: [
           PageHeader(
             context: DateFormat('MMMM yyyy', 'id_ID').format(today),
-            title: 'Insight',
+            title: 'Statistik',
             actions: [
               SegmentedButton<_Period>(
                 showSelectedIcon: false,
@@ -51,6 +54,8 @@ class _InsightPageState extends ConsumerState<InsightPage> {
               ),
             ],
           ),
+          const SizedBox(height: 16),
+          widget.viewSwitch,
           const SizedBox(height: 16),
           switch ((txs, user)) {
             (AsyncData(value: final t), AsyncData(value: final u)) =>

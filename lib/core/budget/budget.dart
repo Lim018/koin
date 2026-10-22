@@ -39,6 +39,9 @@ DateRange weekRange(DateTime t) {
 DateRange monthRange(DateTime t) =>
     (start: DateTime(t.year, t.month), end: DateTime(t.year, t.month + 1));
 
+/// Every entry ever recorded (account balances, profile stats).
+final allTime = (start: DateTime(1970), end: DateTime(9999));
+
 double weeklyBudget(double dailyBudget) => dailyBudget * 7;
 
 /// Total spending. Income never counts against the budget, so every budget

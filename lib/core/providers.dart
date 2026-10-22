@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:isar_community/isar.dart';
 
 import 'budget/budget.dart';
+import 'db/account.dart';
 import 'db/repository.dart';
 import 'db/transaction.dart';
 import 'db/user_state.dart';
@@ -33,6 +34,10 @@ final todayProvider = Provider<DateTime>((ref) {
 
 final userStateProvider = StreamProvider<UserState>(
   (ref) => ref.watch(repositoryProvider).watchUserState(),
+);
+
+final accountsProvider = StreamProvider<List<Account>>(
+  (ref) => ref.watch(repositoryProvider).watchAccounts(),
 );
 
 /// Live transactions in a date range, newest first.

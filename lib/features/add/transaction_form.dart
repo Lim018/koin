@@ -4,11 +4,13 @@ import 'package:intl/intl.dart';
 
 import '../../core/budget/budget.dart';
 import '../../core/categories.dart';
+import '../../core/db/account.dart';
 import '../../core/db/transaction.dart';
 import '../../core/detected_payment.dart';
 import '../../core/format.dart';
 import '../../core/providers.dart';
 import '../../core/theme/app_colors.dart';
+import '../../ui/cozy.dart';
 
 /// Amount + category (+ kind, wallet and note unless [compact]) entry form,
 /// shared by the in-app sheet and the home-screen quick-add pop-up.
@@ -55,13 +57,9 @@ class _TransactionFormState extends ConsumerState<TransactionForm> {
     final e? => TxCategory.of(e),
     null => widget.initial?.category ?? ExpenseCategory.makan,
   };
-  late var _wallet =
-      widget.editing?.walletSource ??
-      widget.initial?.wallet ??
-      walletSources.first;
 
-  /// Keeps an unusual stored wallet (e.g. from an old entry) selectable.
-  late final _wallets = {...walletSources, _wallet}.toList();
+  /// Null until picked: a new entry goes to the first account.
+  late String? _wallet = widget.editing?.walletSource ?? widget.initial?.wallet;
   var _saving = false;
 
   @override
@@ -87,6 +85,7 @@ class _TransactionFormState extends ConsumerState<TransactionForm> {
     try {
       final note = _note.text.trim();
       final repo = ref.read(repositoryProvider);
+      final accounts = ref.read(accountsProvider).valueOrNull ?? const [];
       if (widget.editing case final e?) {
         await repo.updateTransaction(
           Transaction()
@@ -96,14 +95,14 @@ class _TransactionFormState extends ConsumerState<TransactionForm> {
             ..kind = _kind
             ..amount = value
             ..category = _category.label
-            ..walletSource = _wallet
+            ..walletSource = _walletOr(accounts)
             ..note = note.isEmpty ? null : note,
         );
       } else {
         await repo.addTransaction(
           amount: value,
           category: _category.label,
-          walletSource: _wallet,
+          walletSource: _walletOr(accounts),
           timestamp: widget.initial?.timestamp ?? _timestampOn(widget.day),
           isAutoLogged: widget.initial != null,
           note: note.isEmpty ? null : note,
@@ -117,6 +116,9 @@ class _TransactionFormState extends ConsumerState<TransactionForm> {
       messenger.showSnackBar(SnackBar(content: Text('Gagal menyimpan: $e')));
     }
   }
+
+  String _walletOr(List<Account> accounts) =>
+      _wallet ?? (accounts.isEmpty ? 'Cash' : accounts.first.name);
 
   /// Now's time of day on [day] (null for today), so entries keep order.
   static DateTime? _timestampOn(DateTime? day) {
@@ -136,6 +138,10 @@ class _TransactionFormState extends ConsumerState<TransactionForm> {
           )
         : TxCategory.forKind(_kind);
     final income = _kind == TransactionKind.income;
+    final accounts = ref.watch(accountsProvider).valueOrNull ?? const [];
+    final wallet = _walletOr(accounts);
+    // Keeps a stored wallet that is no longer an account (deleted) selectable.
+    final wallets = {for (final a in accounts) a.name, wallet};
     // A detected payment is always money going out.
     final canSwitchKind = !widget.compact && widget.initial == null;
 
@@ -222,10 +228,10 @@ class _TransactionFormState extends ConsumerState<TransactionForm> {
             spacing: 8,
             runSpacing: 8,
             children: [
-              for (final w in _wallets)
+              for (final w in wallets)
                 ChoiceChip(
                   label: Text(w),
-                  selected: w == _wallet,
+                  selected: w == wallet,
                   showCheckmark: false,
                   onSelected: (_) => setState(() => _wallet = w),
                 ),
@@ -266,60 +272,25 @@ Future<void> showTransactionSheet(
       'Catat untuk ${DateFormat('d MMMM', 'id_ID').format(d)}',
     _ => 'Catat transaksi',
   };
-  return showModalBottomSheet(
-    context: context,
-    isScrollControlled: true,
-    // Android 15+ is edge-to-edge: keep the sheet below the status bar.
-    useSafeArea: true,
-    backgroundColor: AppColors.card,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-    ),
-    builder: (context) => Padding(
-      padding: EdgeInsets.fromLTRB(
-        20,
-        12,
-        20,
-        20 + MediaQuery.viewInsetsOf(context).bottom,
-      ),
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: AppColors.chipBorder,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
+  return showCozySheet(
+    context,
+    title: title,
+    child: TransactionForm(
+      editing: editing,
+      day: day,
+      onSaved: (value) {
+        final messenger = ScaffoldMessenger.of(context);
+        Navigator.of(context).pop();
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text(
+              editing == null
+                  ? '${formatRupiah(value)} tercatat'
+                  : 'Perubahan disimpan',
             ),
-            const SizedBox(height: 16),
-            Text(title, style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 16),
-            TransactionForm(
-              editing: editing,
-              day: day,
-              onSaved: (value) {
-                final messenger = ScaffoldMessenger.of(context);
-                Navigator.of(context).pop();
-                messenger.showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      editing == null
-                          ? '${formatRupiah(value)} tercatat'
-                          : 'Perubahan disimpan',
-                    ),
-                  ),
-                );
-              },
-            ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     ),
   );
 }
