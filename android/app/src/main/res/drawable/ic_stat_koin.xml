@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Monochrome pixel coin for the status bar (from the design's coin sprite). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="24dp"
+    android:viewportWidth="8" android:viewportHeight="8">
+    <path android:fillColor="#FFFFFFFF"
+        android:pathData="M2,0h4v1h1v1h1v4h-1v1h-1v1h-4v-1h-1v-1h-1v-4h1v-1h1z M3,2v3h1v-3z" android:fillType="evenOdd"/>
+</vector>
