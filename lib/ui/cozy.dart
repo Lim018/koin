@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../core/shop/catalog.dart';
 import '../core/theme/app_colors.dart';
 
 /// White card with a 1px border and a very soft warm shadow.
@@ -37,25 +38,27 @@ class CozyCard extends StatelessWidget {
   }
 }
 
-/// The warm cream gradient behind every screen.
+/// The gradient behind every screen, in the equipped [habitat]'s colours.
 class CozyBackground extends StatelessWidget {
-  const CozyBackground({super.key, required this.child});
+  const CozyBackground({
+    super.key,
+    required this.child,
+    this.habitat = Habitat.kamar,
+  });
 
   final Widget child;
+  final Habitat habitat;
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: const BoxDecoration(
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          stops: [0, 0.6, 1],
-          colors: [
-            AppColors.backgroundTop,
-            AppColors.backgroundMid,
-            AppColors.backgroundBottom,
-          ],
+          stops: const [0, 0.6, 1],
+          colors: habitat.background,
         ),
       ),
       child: child,

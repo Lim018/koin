@@ -17,23 +17,35 @@ const UserStateSchema = CollectionSchema(
   name: r'UserState',
   id: -3052082333501167064,
   properties: {
-    r'coinsAwardedThrough': PropertySchema(
+    r'accessory': PropertySchema(
       id: 0,
+      name: r'accessory',
+      type: IsarType.string,
+    ),
+    r'coinsAwardedThrough': PropertySchema(
+      id: 1,
       name: r'coinsAwardedThrough',
       type: IsarType.dateTime,
     ),
     r'dailyBudgetTarget': PropertySchema(
-      id: 1,
+      id: 2,
       name: r'dailyBudgetTarget',
       type: IsarType.double,
     ),
+    r'habitat': PropertySchema(id: 3, name: r'habitat', type: IsarType.string),
     r'lastUpdated': PropertySchema(
-      id: 2,
+      id: 4,
       name: r'lastUpdated',
       type: IsarType.dateTime,
     ),
+    r'ownedItems': PropertySchema(
+      id: 5,
+      name: r'ownedItems',
+      type: IsarType.stringList,
+    ),
+    r'pet': PropertySchema(id: 6, name: r'pet', type: IsarType.string),
     r'savedCoins': PropertySchema(
-      id: 3,
+      id: 7,
       name: r'savedCoins',
       type: IsarType.long,
     ),
@@ -60,6 +72,31 @@ int _userStateEstimateSize(
   Map<Type, List<int>> allOffsets,
 ) {
   var bytesCount = offsets.last;
+  {
+    final value = object.accessory;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
+    final value = object.habitat;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  bytesCount += 3 + object.ownedItems.length * 3;
+  {
+    for (var i = 0; i < object.ownedItems.length; i++) {
+      final value = object.ownedItems[i];
+      bytesCount += value.length * 3;
+    }
+  }
+  {
+    final value = object.pet;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   return bytesCount;
 }
 
@@ -69,10 +106,14 @@ void _userStateSerialize(
   List<int> offsets,
   Map<Type, List<int>> allOffsets,
 ) {
-  writer.writeDateTime(offsets[0], object.coinsAwardedThrough);
-  writer.writeDouble(offsets[1], object.dailyBudgetTarget);
-  writer.writeDateTime(offsets[2], object.lastUpdated);
-  writer.writeLong(offsets[3], object.savedCoins);
+  writer.writeString(offsets[0], object.accessory);
+  writer.writeDateTime(offsets[1], object.coinsAwardedThrough);
+  writer.writeDouble(offsets[2], object.dailyBudgetTarget);
+  writer.writeString(offsets[3], object.habitat);
+  writer.writeDateTime(offsets[4], object.lastUpdated);
+  writer.writeStringList(offsets[5], object.ownedItems);
+  writer.writeString(offsets[6], object.pet);
+  writer.writeLong(offsets[7], object.savedCoins);
 }
 
 UserState _userStateDeserialize(
@@ -82,11 +123,15 @@ UserState _userStateDeserialize(
   Map<Type, List<int>> allOffsets,
 ) {
   final object = UserState();
-  object.coinsAwardedThrough = reader.readDateTimeOrNull(offsets[0]);
-  object.dailyBudgetTarget = reader.readDouble(offsets[1]);
+  object.accessory = reader.readStringOrNull(offsets[0]);
+  object.coinsAwardedThrough = reader.readDateTimeOrNull(offsets[1]);
+  object.dailyBudgetTarget = reader.readDouble(offsets[2]);
+  object.habitat = reader.readStringOrNull(offsets[3]);
   object.id = id;
-  object.lastUpdated = reader.readDateTime(offsets[2]);
-  object.savedCoins = reader.readLong(offsets[3]);
+  object.lastUpdated = reader.readDateTime(offsets[4]);
+  object.ownedItems = reader.readStringList(offsets[5]) ?? [];
+  object.pet = reader.readStringOrNull(offsets[6]);
+  object.savedCoins = reader.readLong(offsets[7]);
   return object;
 }
 
@@ -98,12 +143,20 @@ P _userStateDeserializeProp<P>(
 ) {
   switch (propertyId) {
     case 0:
-      return (reader.readDateTimeOrNull(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 1:
-      return (reader.readDouble(offset)) as P;
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 2:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readDouble(offset)) as P;
     case 3:
+      return (reader.readStringOrNull(offset)) as P;
+    case 4:
+      return (reader.readDateTime(offset)) as P;
+    case 5:
+      return (reader.readStringList(offset) ?? []) as P;
+    case 6:
+      return (reader.readStringOrNull(offset)) as P;
+    case 7:
       return (reader.readLong(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -204,6 +257,171 @@ extension UserStateQueryWhere
 
 extension UserStateQueryFilter
     on QueryBuilder<UserState, UserState, QFilterCondition> {
+  QueryBuilder<UserState, UserState, QAfterFilterCondition> accessoryIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNull(property: r'accessory'),
+      );
+    });
+  }
+
+  QueryBuilder<UserState, UserState, QAfterFilterCondition>
+  accessoryIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNotNull(property: r'accessory'),
+      );
+    });
+  }
+
+  QueryBuilder<UserState, UserState, QAfterFilterCondition> accessoryEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'accessory',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<UserState, UserState, QAfterFilterCondition>
+  accessoryGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'accessory',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<UserState, UserState, QAfterFilterCondition> accessoryLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'accessory',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<UserState, UserState, QAfterFilterCondition> accessoryBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'accessory',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<UserState, UserState, QAfterFilterCondition> accessoryStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'accessory',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<UserState, UserState, QAfterFilterCondition> accessoryEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'accessory',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<UserState, UserState, QAfterFilterCondition> accessoryContains(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'accessory',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<UserState, UserState, QAfterFilterCondition> accessoryMatches(
+    String pattern, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'accessory',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<UserState, UserState, QAfterFilterCondition> accessoryIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'accessory', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<UserState, UserState, QAfterFilterCondition>
+  accessoryIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(property: r'accessory', value: ''),
+      );
+    });
+  }
+
   QueryBuilder<UserState, UserState, QAfterFilterCondition>
   coinsAwardedThroughIsNull() {
     return QueryBuilder.apply(this, (query) {
@@ -352,6 +570,169 @@ extension UserStateQueryFilter
     });
   }
 
+  QueryBuilder<UserState, UserState, QAfterFilterCondition> habitatIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNull(property: r'habitat'),
+      );
+    });
+  }
+
+  QueryBuilder<UserState, UserState, QAfterFilterCondition> habitatIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNotNull(property: r'habitat'),
+      );
+    });
+  }
+
+  QueryBuilder<UserState, UserState, QAfterFilterCondition> habitatEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'habitat',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<UserState, UserState, QAfterFilterCondition> habitatGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'habitat',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<UserState, UserState, QAfterFilterCondition> habitatLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'habitat',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<UserState, UserState, QAfterFilterCondition> habitatBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'habitat',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<UserState, UserState, QAfterFilterCondition> habitatStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'habitat',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<UserState, UserState, QAfterFilterCondition> habitatEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'habitat',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<UserState, UserState, QAfterFilterCondition> habitatContains(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'habitat',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<UserState, UserState, QAfterFilterCondition> habitatMatches(
+    String pattern, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'habitat',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<UserState, UserState, QAfterFilterCondition> habitatIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'habitat', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<UserState, UserState, QAfterFilterCondition>
+  habitatIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(property: r'habitat', value: ''),
+      );
+    });
+  }
+
   QueryBuilder<UserState, UserState, QAfterFilterCondition> idEqualTo(
     Id value,
   ) {
@@ -468,6 +849,362 @@ extension UserStateQueryFilter
     });
   }
 
+  QueryBuilder<UserState, UserState, QAfterFilterCondition>
+  ownedItemsElementEqualTo(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'ownedItems',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<UserState, UserState, QAfterFilterCondition>
+  ownedItemsElementGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'ownedItems',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<UserState, UserState, QAfterFilterCondition>
+  ownedItemsElementLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'ownedItems',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<UserState, UserState, QAfterFilterCondition>
+  ownedItemsElementBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'ownedItems',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<UserState, UserState, QAfterFilterCondition>
+  ownedItemsElementStartsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'ownedItems',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<UserState, UserState, QAfterFilterCondition>
+  ownedItemsElementEndsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'ownedItems',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<UserState, UserState, QAfterFilterCondition>
+  ownedItemsElementContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'ownedItems',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<UserState, UserState, QAfterFilterCondition>
+  ownedItemsElementMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'ownedItems',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<UserState, UserState, QAfterFilterCondition>
+  ownedItemsElementIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'ownedItems', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<UserState, UserState, QAfterFilterCondition>
+  ownedItemsElementIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(property: r'ownedItems', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<UserState, UserState, QAfterFilterCondition>
+  ownedItemsLengthEqualTo(int length) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(r'ownedItems', length, true, length, true);
+    });
+  }
+
+  QueryBuilder<UserState, UserState, QAfterFilterCondition>
+  ownedItemsIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(r'ownedItems', 0, true, 0, true);
+    });
+  }
+
+  QueryBuilder<UserState, UserState, QAfterFilterCondition>
+  ownedItemsIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(r'ownedItems', 0, false, 999999, true);
+    });
+  }
+
+  QueryBuilder<UserState, UserState, QAfterFilterCondition>
+  ownedItemsLengthLessThan(int length, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(r'ownedItems', 0, true, length, include);
+    });
+  }
+
+  QueryBuilder<UserState, UserState, QAfterFilterCondition>
+  ownedItemsLengthGreaterThan(int length, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(r'ownedItems', length, include, 999999, true);
+    });
+  }
+
+  QueryBuilder<UserState, UserState, QAfterFilterCondition>
+  ownedItemsLengthBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'ownedItems',
+        lower,
+        includeLower,
+        upper,
+        includeUpper,
+      );
+    });
+  }
+
+  QueryBuilder<UserState, UserState, QAfterFilterCondition> petIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNull(property: r'pet'),
+      );
+    });
+  }
+
+  QueryBuilder<UserState, UserState, QAfterFilterCondition> petIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNotNull(property: r'pet'),
+      );
+    });
+  }
+
+  QueryBuilder<UserState, UserState, QAfterFilterCondition> petEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'pet',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<UserState, UserState, QAfterFilterCondition> petGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'pet',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<UserState, UserState, QAfterFilterCondition> petLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'pet',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<UserState, UserState, QAfterFilterCondition> petBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'pet',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<UserState, UserState, QAfterFilterCondition> petStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'pet',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<UserState, UserState, QAfterFilterCondition> petEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'pet',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<UserState, UserState, QAfterFilterCondition> petContains(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'pet',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<UserState, UserState, QAfterFilterCondition> petMatches(
+    String pattern, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'pet',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<UserState, UserState, QAfterFilterCondition> petIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'pet', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<UserState, UserState, QAfterFilterCondition> petIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(property: r'pet', value: ''),
+      );
+    });
+  }
+
   QueryBuilder<UserState, UserState, QAfterFilterCondition> savedCoinsEqualTo(
     int value,
   ) {
@@ -533,6 +1270,18 @@ extension UserStateQueryLinks
     on QueryBuilder<UserState, UserState, QFilterCondition> {}
 
 extension UserStateQuerySortBy on QueryBuilder<UserState, UserState, QSortBy> {
+  QueryBuilder<UserState, UserState, QAfterSortBy> sortByAccessory() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'accessory', Sort.asc);
+    });
+  }
+
+  QueryBuilder<UserState, UserState, QAfterSortBy> sortByAccessoryDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'accessory', Sort.desc);
+    });
+  }
+
   QueryBuilder<UserState, UserState, QAfterSortBy> sortByCoinsAwardedThrough() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'coinsAwardedThrough', Sort.asc);
@@ -559,6 +1308,18 @@ extension UserStateQuerySortBy on QueryBuilder<UserState, UserState, QSortBy> {
     });
   }
 
+  QueryBuilder<UserState, UserState, QAfterSortBy> sortByHabitat() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'habitat', Sort.asc);
+    });
+  }
+
+  QueryBuilder<UserState, UserState, QAfterSortBy> sortByHabitatDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'habitat', Sort.desc);
+    });
+  }
+
   QueryBuilder<UserState, UserState, QAfterSortBy> sortByLastUpdated() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'lastUpdated', Sort.asc);
@@ -568,6 +1329,18 @@ extension UserStateQuerySortBy on QueryBuilder<UserState, UserState, QSortBy> {
   QueryBuilder<UserState, UserState, QAfterSortBy> sortByLastUpdatedDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'lastUpdated', Sort.desc);
+    });
+  }
+
+  QueryBuilder<UserState, UserState, QAfterSortBy> sortByPet() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'pet', Sort.asc);
+    });
+  }
+
+  QueryBuilder<UserState, UserState, QAfterSortBy> sortByPetDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'pet', Sort.desc);
     });
   }
 
@@ -586,6 +1359,18 @@ extension UserStateQuerySortBy on QueryBuilder<UserState, UserState, QSortBy> {
 
 extension UserStateQuerySortThenBy
     on QueryBuilder<UserState, UserState, QSortThenBy> {
+  QueryBuilder<UserState, UserState, QAfterSortBy> thenByAccessory() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'accessory', Sort.asc);
+    });
+  }
+
+  QueryBuilder<UserState, UserState, QAfterSortBy> thenByAccessoryDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'accessory', Sort.desc);
+    });
+  }
+
   QueryBuilder<UserState, UserState, QAfterSortBy> thenByCoinsAwardedThrough() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'coinsAwardedThrough', Sort.asc);
@@ -609,6 +1394,18 @@ extension UserStateQuerySortThenBy
   thenByDailyBudgetTargetDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'dailyBudgetTarget', Sort.desc);
+    });
+  }
+
+  QueryBuilder<UserState, UserState, QAfterSortBy> thenByHabitat() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'habitat', Sort.asc);
+    });
+  }
+
+  QueryBuilder<UserState, UserState, QAfterSortBy> thenByHabitatDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'habitat', Sort.desc);
     });
   }
 
@@ -636,6 +1433,18 @@ extension UserStateQuerySortThenBy
     });
   }
 
+  QueryBuilder<UserState, UserState, QAfterSortBy> thenByPet() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'pet', Sort.asc);
+    });
+  }
+
+  QueryBuilder<UserState, UserState, QAfterSortBy> thenByPetDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'pet', Sort.desc);
+    });
+  }
+
   QueryBuilder<UserState, UserState, QAfterSortBy> thenBySavedCoins() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'savedCoins', Sort.asc);
@@ -651,6 +1460,14 @@ extension UserStateQuerySortThenBy
 
 extension UserStateQueryWhereDistinct
     on QueryBuilder<UserState, UserState, QDistinct> {
+  QueryBuilder<UserState, UserState, QDistinct> distinctByAccessory({
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'accessory', caseSensitive: caseSensitive);
+    });
+  }
+
   QueryBuilder<UserState, UserState, QDistinct>
   distinctByCoinsAwardedThrough() {
     return QueryBuilder.apply(this, (query) {
@@ -664,9 +1481,31 @@ extension UserStateQueryWhereDistinct
     });
   }
 
+  QueryBuilder<UserState, UserState, QDistinct> distinctByHabitat({
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'habitat', caseSensitive: caseSensitive);
+    });
+  }
+
   QueryBuilder<UserState, UserState, QDistinct> distinctByLastUpdated() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'lastUpdated');
+    });
+  }
+
+  QueryBuilder<UserState, UserState, QDistinct> distinctByOwnedItems() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'ownedItems');
+    });
+  }
+
+  QueryBuilder<UserState, UserState, QDistinct> distinctByPet({
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'pet', caseSensitive: caseSensitive);
     });
   }
 
@@ -685,6 +1524,12 @@ extension UserStateQueryProperty
     });
   }
 
+  QueryBuilder<UserState, String?, QQueryOperations> accessoryProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'accessory');
+    });
+  }
+
   QueryBuilder<UserState, DateTime?, QQueryOperations>
   coinsAwardedThroughProperty() {
     return QueryBuilder.apply(this, (query) {
@@ -699,9 +1544,27 @@ extension UserStateQueryProperty
     });
   }
 
+  QueryBuilder<UserState, String?, QQueryOperations> habitatProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'habitat');
+    });
+  }
+
   QueryBuilder<UserState, DateTime, QQueryOperations> lastUpdatedProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'lastUpdated');
+    });
+  }
+
+  QueryBuilder<UserState, List<String>, QQueryOperations> ownedItemsProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'ownedItems');
+    });
+  }
+
+  QueryBuilder<UserState, String?, QQueryOperations> petProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'pet');
     });
   }
 

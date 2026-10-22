@@ -9,6 +9,7 @@ import 'db/repository.dart';
 import 'db/transaction.dart';
 import 'db/user_state.dart';
 import 'home_widget_sync.dart';
+import 'shop/catalog.dart';
 
 /// Opened in `main()` and injected via `ProviderScope.overrides`.
 final isarProvider = Provider<Isar>(
@@ -39,6 +40,13 @@ final userStateProvider = StreamProvider<UserState>(
 final accountsProvider = StreamProvider<List<Account>>(
   (ref) => ref.watch(repositoryProvider).watchAccounts(),
 );
+
+/// Equipped pet, accessory and habitat; the default look while loading.
+final lookProvider = Provider<Look>((ref) {
+  final s = ref.watch(userStateProvider).valueOrNull;
+  if (s == null) return defaultLook;
+  return lookOf(pet: s.pet, accessory: s.accessory, habitat: s.habitat);
+});
 
 /// Live transactions in a date range, newest first.
 final transactionsProvider = StreamProvider.autoDispose

@@ -6,7 +6,7 @@ import '../../core/budget/budget.dart';
 import '../../core/providers.dart';
 import '../../core/theme/app_colors.dart';
 import '../../ui/cozy.dart';
-import '../../ui/koko_sprite.dart';
+import '../shop/equipped_koko.dart';
 
 /// Top of "Profil": Koko, since when the user has been recording, and a few
 /// running totals.
@@ -36,7 +36,7 @@ class ProfileCard extends ConsumerWidget {
                   color: AppColors.roomWall,
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: const KokoSprite(mood: KokoMood.happy, width: 46),
+                child: const EquippedKoko(width: 46),
               ),
               const SizedBox(width: 14),
               Expanded(

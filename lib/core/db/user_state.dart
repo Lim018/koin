@@ -18,6 +18,14 @@ class UserState {
   /// null until the first evaluation.
   DateTime? coinsAwardedThrough;
 
+  /// Toko Koko purchases as [ShopItemKey.key]s; free items are not listed.
+  List<String> ownedItems = [];
+
+  /// Equipped item names (enum `name`s in catalog.dart); null = default.
+  String? pet;
+  String? accessory;
+  String? habitat;
+
   static const defaultDailyBudget = 200000.0;
 
   static UserState initial(DateTime now) => UserState()

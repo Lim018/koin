@@ -1,25 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/budget/budget.dart';
+import '../../core/providers.dart';
+import '../../core/shop/catalog.dart';
 import '../../core/theme/app_colors.dart';
 import '../../ui/cozy.dart';
-import '../../ui/koko_sprite.dart';
 import '../accounts/accounts_page.dart';
 import '../add/transaction_form.dart';
 import '../dashboard/dashboard_page.dart';
 import '../settings/settings_page.dart';
+import '../shop/equipped_koko.dart';
 import '../stats/stats_page.dart';
 
 /// Main app frame: four tabs (Beranda · Statistik · Bank · Profil) in a
 /// floating nav bar, plus the floating "catat" pencil on Beranda.
-class HomeShell extends StatefulWidget {
+class HomeShell extends ConsumerStatefulWidget {
   const HomeShell({super.key});
 
   @override
-  State<HomeShell> createState() => _HomeShellState();
+  ConsumerState<HomeShell> createState() => _HomeShellState();
 }
 
-class _HomeShellState extends State<HomeShell> {
+class _HomeShellState extends ConsumerState<HomeShell> {
   var _index = 0;
 
   static const _pages = [
@@ -31,9 +33,11 @@ class _HomeShellState extends State<HomeShell> {
 
   @override
   Widget build(BuildContext context) {
+    final habitat = ref.watch(lookProvider).habitat;
     return Scaffold(
       extendBody: true,
       body: CozyBackground(
+        habitat: habitat,
         child: IndexedStack(index: _index, children: _pages),
       ),
       floatingActionButton: _index == 0
@@ -42,6 +46,7 @@ class _HomeShellState extends State<HomeShell> {
       bottomNavigationBar: SafeArea(
         minimum: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         child: _NavBar(
+          habitat: habitat,
           index: _index,
           onSelect: (i) => setState(() => _index = i),
         ),
@@ -56,23 +61,27 @@ const navBarClearance = 108.0;
 /// Extra clearance on Beranda for the floating pencil above the nav bar.
 const writeButtonClearance = 80.0;
 
-const _barColor = Color(0xFFFCF1E2);
-const _tileColor = Color(0xFFF6E7D3);
-const _selectedColor = Color(0xFFFDE2C0);
-
 class _NavBar extends StatelessWidget {
-  const _NavBar({required this.index, required this.onSelect});
+  const _NavBar({
+    required this.habitat,
+    required this.index,
+    required this.onSelect,
+  });
 
+  /// Colours the bar (bar, idle tile, selected pill).
+  final Habitat habitat;
   final int index;
   final ValueChanged<int> onSelect;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    final (bar, _, _) = habitat.nav;
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
       height: 72,
       padding: const EdgeInsets.symmetric(horizontal: 6),
       decoration: BoxDecoration(
-        color: _barColor,
+        color: bar,
         borderRadius: BorderRadius.circular(999),
         border: Border.all(color: AppColors.cardBorder),
         boxShadow: const [
@@ -89,7 +98,7 @@ class _NavBar extends StatelessWidget {
           _tab(0, const _Emoji('📒'), 'Beranda'),
           _tab(1, const _Emoji('📊'), 'Statistik'),
           _tab(2, const _Emoji('👛'), 'Bank'),
-          _tab(3, const KokoSprite(mood: KokoMood.happy, width: 30), 'Profil'),
+          _tab(3, const EquippedKoko(width: 30), 'Profil'),
         ],
       ),
     );
@@ -97,6 +106,7 @@ class _NavBar extends StatelessWidget {
 
   Widget _tab(int i, Widget icon, String label) {
     final selected = i == index;
+    final (_, tile, pill) = habitat.nav;
     return Semantics(
       selected: selected,
       button: true,
@@ -110,7 +120,7 @@ class _NavBar extends StatelessWidget {
           curve: Curves.easeOutCubic,
           padding: const EdgeInsets.all(5),
           decoration: BoxDecoration(
-            color: selected ? _selectedColor : Colors.transparent,
+            color: selected ? pill : Colors.transparent,
             borderRadius: BorderRadius.circular(999),
           ),
           child: Row(
@@ -121,9 +131,7 @@ class _NavBar extends StatelessWidget {
                 height: 44,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: selected
-                      ? Colors.white.withValues(alpha: 0.5)
-                      : _tileColor,
+                  color: selected ? Colors.white.withValues(alpha: 0.5) : tile,
                   borderRadius: BorderRadius.circular(15),
                 ),
                 child: icon,

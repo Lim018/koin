@@ -9,6 +9,9 @@ import '../../core/theme/app_colors.dart';
 import '../../ui/cozy.dart';
 import '../../ui/koko_sprite.dart';
 import '../diary/diary_list.dart';
+import '../room/koko_room.dart';
+import '../shop/coins.dart';
+import '../shop/shop_page.dart';
 import '../shell/home_shell.dart';
 
 /// "Kamar Koko": the mascot's room on top, today's diary below.
@@ -78,14 +81,14 @@ class DashboardPage extends ConsumerWidget {
   }
 }
 
-class _RoomCard extends StatelessWidget {
+class _RoomCard extends ConsumerWidget {
   const _RoomCard({required this.today, required this.week});
 
   final BudgetSummary today;
   final BudgetSummary week;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final mood = today.mood;
     final weekOver = isOverBudget(spent: week.spent, budget: week.budget);
 
@@ -94,7 +97,11 @@ class _RoomCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _Room(mood: mood),
+          KokoRoom(
+            mood: mood,
+            look: ref.watch(lookProvider),
+            bubble: _bubbleText(mood),
+          ),
           Padding(
             padding: const EdgeInsets.fromLTRB(8, 14, 8, 8),
             child: Column(
@@ -180,151 +187,11 @@ class _RoomCard extends StatelessWidget {
   }
 }
 
-/// The cozy pixel room from the design: wall, window, checker floor, Koko.
-class _Room extends StatelessWidget {
-  const _Room({required this.mood});
-
-  final KokoMood mood;
-
-  static const _floorHeight = 70.0;
-
-  @override
-  Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(16),
-      child: SizedBox(
-        height: 210,
-        child: Stack(
-          children: [
-            const Positioned.fill(child: ColoredBox(color: AppColors.roomWall)),
-            const Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              height: _floorHeight,
-              child: CustomPaint(painter: _CheckerFloor()),
-            ),
-            const Positioned(
-              left: 0,
-              right: 0,
-              bottom: _floorHeight,
-              height: 6,
-              child: ColoredBox(color: Color(0xFFE3CBAE)),
-            ),
-            const Positioned(left: 20, top: 20, child: _Window()),
-            Positioned(
-              right: 14,
-              top: 18,
-              child: _SpeechBubble(text: _bubbleText(mood)),
-            ),
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 24,
-              child: Center(
-                child: KokoSprite(mood: mood, width: 100, hop: true),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  static String _bubbleText(KokoMood mood) => switch (mood) {
-    KokoMood.happy => 'Hari ini aman,\nmantap!',
-    KokoMood.neutral => 'Hampir batas nih,\npelan-pelan ya.',
-    KokoMood.grumpy => 'Udah lewat\ntarget hari ini!',
-  };
-}
-
-class _CheckerFloor extends CustomPainter {
-  const _CheckerFloor();
-
-  static const _tile = 14.0;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    canvas.drawRect(
-      Offset.zero & size,
-      Paint()..color = const Color(0xFFEEDCC4),
-    );
-    final dark = Paint()..color = const Color(0xFFE7D2B6);
-    for (var y = 0.0; y < size.height; y += _tile) {
-      for (var x = 0.0; x < size.width; x += _tile) {
-        final odd = ((x / _tile).round() + (y / _tile).round()).isOdd;
-        if (odd) canvas.drawRect(Rect.fromLTWH(x, y, _tile, _tile), dark);
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(_CheckerFloor old) => false;
-}
-
-class _Window extends StatelessWidget {
-  const _Window();
-
-  @override
-  Widget build(BuildContext context) {
-    const frame = Color(0xFFFFFFFF);
-    return Container(
-      width: 80,
-      height: 68,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: frame, width: 4),
-        boxShadow: const [BoxShadow(color: Color(0xFFEADBC8), spreadRadius: 1)],
-        gradient: const LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          stops: [0, 0.75, 1],
-          colors: [Color(0xFFD7E6E6), Color(0xFFF7DCC2), Color(0xFFF2BE98)],
-        ),
-      ),
-      child: const Stack(
-        children: [
-          Center(
-            child: SizedBox(
-              width: 4,
-              height: double.infinity,
-              child: ColoredBox(color: frame),
-            ),
-          ),
-          Center(
-            child: SizedBox(
-              height: 4,
-              width: double.infinity,
-              child: ColoredBox(color: frame),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SpeechBubble extends StatelessWidget {
-  const _SpeechBubble({required this.text});
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(
-        color: AppColors.card,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.cardBorder),
-      ),
-      child: Text(
-        text,
-        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
-      ),
-    );
-  }
-}
+String _bubbleText(KokoMood mood) => switch (mood) {
+  KokoMood.happy => 'Hari ini aman,\nmantap!',
+  KokoMood.neutral => 'Hampir batas nih,\npelan-pelan ya.',
+  KokoMood.grumpy => 'Udah lewat\ntarget hari ini!',
+};
 
 /// This month's money in vs. out (income never affects Koko's budget).
 class _MonthFlow extends StatelessWidget {
@@ -430,8 +297,8 @@ class _DiaryHeader extends StatelessWidget {
   }
 }
 
-/// Coin balance pill from the room design (pixel coin + count); tap for
-/// how coins are earned.
+/// Coin balance pill from the room design (pixel coin + count); opens
+/// Toko Koko.
 class _CoinChip extends StatelessWidget {
   const _CoinChip({required this.coins});
 
@@ -447,7 +314,7 @@ class _CoinChip extends StatelessWidget {
       excludeSemantics: true,
       child: InkWell(
         borderRadius: BorderRadius.circular(999),
-        onTap: () => _showCoinInfo(context, coins),
+        onTap: () => openShop(context),
         child: Container(
           height: 36,
           padding: const EdgeInsets.fromLTRB(10, 0, 12, 0),
@@ -459,7 +326,7 @@ class _CoinChip extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const CustomPaint(size: Size(16, 16), painter: _PixelCoin()),
+              const CustomPaint(size: Size(16, 16), painter: PixelCoin()),
               const SizedBox(width: 6),
               Text(
                 '$coins',
@@ -475,140 +342,4 @@ class _CoinChip extends StatelessWidget {
       ),
     );
   }
-}
-
-Future<void> _showCoinInfo(BuildContext context, int coins) {
-  return showModalBottomSheet(
-    context: context,
-    useSafeArea: true,
-    backgroundColor: AppColors.card,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-    ),
-    builder: (context) => const Padding(
-      padding: EdgeInsets.fromLTRB(20, 12, 20, 24),
-      child: _CoinInfo(),
-    ),
-  );
-}
-
-/// What coins are for and whether today is on track to earn them.
-class _CoinInfo extends ConsumerWidget {
-  const _CoinInfo();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final coins = ref.watch(userStateProvider).valueOrNull?.savedCoins ?? 0;
-    final today = ref.watch(todaySummaryProvider).valueOrNull;
-    final (todayText, onTrack) = switch (today) {
-      null => ('', true),
-      (spent: 0, budget: _, mood: _) => (
-        'Belum ada catatan hari ini. Catat pengeluaranmu supaya hari ini '
-            'bisa dihitung.',
-        false,
-      ),
-      final t when isOverBudget(spent: t.spent, budget: t.budget) => (
-        'Hari ini sudah lewat target, jadi belum dapat koin. Besok coba '
-            'lagi, ya!',
-        false,
-      ),
-      final t => (
-        'Hari ini masih aman. Tetap di bawah '
-            '${formatRupiah(t.budget)} sampai tengah malam untuk dapat '
-            '+$coinsPerDay koin.',
-        true,
-      ),
-    };
-
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Center(
-          child: Container(
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: AppColors.chipBorder,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            const CustomPaint(size: Size(28, 28), painter: _PixelCoin()),
-            const SizedBox(width: 10),
-            Text(
-              '$coins koin',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        const Text(
-          'Dapat +$coinsPerDay koin untuk setiap hari yang ada catatannya dan '
-          'pengeluarannya tidak lewat target harian. Koin dihitung setelah '
-          'hari berakhir.',
-          style: TextStyle(fontSize: 14, height: 1.45),
-        ),
-        if (todayText.isNotEmpty) ...[
-          const SizedBox(height: 14),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: onTrack ? AppColors.sageLight : AppColors.sunsetLight,
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Text(
-              todayText,
-              style: TextStyle(
-                fontSize: 13,
-                height: 1.4,
-                color: onTrack ? AppColors.sageDark : AppColors.sunsetInk,
-              ),
-            ),
-          ),
-        ],
-        const SizedBox(height: 14),
-        const Text(
-          'Segera: tukar koin di Toko Koko untuk menghias kamarnya.',
-          style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
-        ),
-      ],
-    );
-  }
-}
-
-class _PixelCoin extends CustomPainter {
-  const _PixelCoin();
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final u = size.width / 8;
-    void px(List<(double, double, double, double)> rects, Color color) {
-      final paint = Paint()
-        ..color = color
-        ..isAntiAlias = false;
-      for (final (x, y, w, h) in rects) {
-        canvas.drawRect(Rect.fromLTWH(x * u, y * u, w * u, h * u), paint);
-      }
-    }
-
-    px([(2, 1, 4, 6), (1, 2, 6, 4)], AppColors.coin);
-    px([
-      (2, 0, 4, 1),
-      (1, 1, 1, 1),
-      (6, 1, 1, 1),
-      (0, 2, 1, 4),
-      (7, 2, 1, 4),
-      (1, 6, 1, 1),
-      (6, 6, 1, 1),
-      (2, 7, 4, 1),
-    ], AppColors.coinDark);
-    px([(3, 2, 1, 3)], const Color(0xFFFFF3C4));
-  }
-
-  @override
-  bool shouldRepaint(_PixelCoin old) => false;
 }

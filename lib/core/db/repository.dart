@@ -1,6 +1,7 @@
 import 'package:isar_community/isar.dart';
 
 import '../budget/budget.dart';
+import '../shop/catalog.dart';
 import 'account.dart';
 import 'transaction.dart';
 import 'user_state.dart';
@@ -176,6 +177,47 @@ class KoinRepository {
       await _isar.userStates.put(state);
     });
     return awarded;
+  }
+
+  /// Spends [ShopItem.price] coins on [item] and equips it. Throws a
+  /// [StateError] when coins run short; owning it already just equips it.
+  Future<void> buyItem(ShopItem item) => _write(() async {
+    final state =
+        await _isar.userStates.get(UserState.singletonId) ??
+        UserState.initial(DateTime.now());
+    if (!owns(state, item)) {
+      if (state.savedCoins < item.price) {
+        throw StateError('Koin belum cukup');
+      }
+      state
+        ..savedCoins -= item.price
+        ..ownedItems = [...state.ownedItems, item.key];
+    }
+    _equipOn(state, item);
+    state.lastUpdated = DateTime.now();
+    await _isar.userStates.put(state);
+  });
+
+  /// Wears/uses an owned [item].
+  Future<void> equipItem(ShopItem item) => _updateUserState((s) {
+    if (!owns(s, item)) throw StateError('Belum dibeli');
+    _equipOn(s, item);
+  });
+
+  Future<void> removeAccessory() => _updateUserState((s) => s.accessory = null);
+
+  static bool owns(UserState state, ShopItem item) =>
+      item.price == 0 || state.ownedItems.contains(item.key);
+
+  static void _equipOn(UserState state, ShopItem item) {
+    switch (item.slot) {
+      case ShopSlot.pet:
+        state.pet = item.id;
+      case ShopSlot.accessory:
+        state.accessory = item.id;
+      case ShopSlot.habitat:
+        state.habitat = item.id;
+    }
   }
 
   Future<void> _updateUserState(void Function(UserState) change) {

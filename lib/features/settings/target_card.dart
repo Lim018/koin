@@ -7,7 +7,7 @@ import '../../core/format.dart';
 import '../../core/providers.dart';
 import '../../core/theme/app_colors.dart';
 import '../../ui/cozy.dart';
-import '../../ui/koko_sprite.dart';
+import '../shop/equipped_koko.dart';
 
 /// Daily budget editor; Koko's mood and the coin reward are measured
 /// against this target.
@@ -110,7 +110,7 @@ class _TargetCardState extends ConsumerState<_TargetCard> {
             ),
             child: Row(
               children: [
-                const KokoSprite(mood: KokoMood.happy, width: 36),
+                const EquippedKoko(width: 36),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(

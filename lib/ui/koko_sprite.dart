@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../core/budget/budget.dart';
+import '../core/shop/catalog.dart';
 
 /// Pixel-art Koko, ported from the SVG sprites in docs/standalone.html.
 /// Drawn on a 20×18 grid (viewBox -1 -4 20 18) so pixels stay crisp.
@@ -10,9 +11,13 @@ class KokoSprite extends StatefulWidget {
     required this.mood,
     this.width = 112,
     this.hop = false,
+    this.pet = PetSpecies.kucing,
+    this.accessory,
   });
 
   final KokoMood mood;
+  final PetSpecies pet;
+  final Accessory? accessory;
   final double width;
 
   /// Two-frame idle bounce, as in the room design.
@@ -63,7 +68,7 @@ class _KokoSpriteState extends State<KokoSprite>
         ),
         child: CustomPaint(
           size: Size(widget.width, height),
-          painter: _KokoPainter(widget.mood),
+          painter: _KokoPainter(widget.mood, widget.pet, widget.accessory),
         ),
       ),
     );
@@ -81,32 +86,21 @@ const _gridH = 18.0;
 const _originX = -1.0;
 const _originY = -4.0;
 
-typedef _Px = (double x, double y, double w, double h);
+typedef _Px = Px;
 
-const _fur = Color(0xFFF7C59F);
 const _ink = Color(0xFF4A3628);
 const _blush = Color(0xFFF2A98A);
 const _angry = Color(0xFFE8875A);
 
-const List<_Px> _body = [
-  (4, 1, 1, 1),
-  (11, 1, 1, 1),
-  (4, 2, 2, 1),
-  (10, 2, 2, 1),
+/// The head without ears; each [EarShape] closes the top edge.
+const List<_Px> _head = [
   (3, 3, 10, 1),
   (2, 4, 12, 7),
   (3, 11, 10, 1),
   (5, 12, 6, 1),
 ];
 
-const List<_Px> _outline = [
-  (4, 0, 1, 1),
-  (11, 0, 1, 1),
-  (3, 1, 1, 2),
-  (5, 1, 1, 1),
-  (10, 1, 1, 1),
-  (12, 1, 1, 2),
-  (6, 2, 4, 1),
+const List<_Px> _headOutline = [
   (2, 3, 1, 1),
   (13, 3, 1, 1),
   (1, 4, 1, 7),
@@ -147,9 +141,11 @@ const _angerMark = <_Px>[
 ];
 
 class _KokoPainter extends CustomPainter {
-  const _KokoPainter(this.mood);
+  const _KokoPainter(this.mood, this.pet, this.accessory);
 
   final KokoMood mood;
+  final PetSpecies pet;
+  final Accessory? accessory;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -172,13 +168,23 @@ class _KokoPainter extends CustomPainter {
     }
 
     final grumpy = mood == KokoMood.grumpy;
-    draw(_body, _fur);
-    draw(_outline, _ink);
+    draw(_head, pet.fur);
+    draw(pet.ears.fill, pet.earFill ?? pet.fur);
+    draw(pet.ears.inner, _blush);
+    for (final (color, pixels) in pet.marks) {
+      draw(pixels, color);
+    }
+    draw(_headOutline, _ink);
+    draw(pet.ears.outline, _ink);
     draw(_faces[mood]!, _ink);
     draw(_cheeks, grumpy ? _angry : _blush);
+    for (final (color, pixels) in accessory?.layers ?? const <PxLayer>[]) {
+      draw(pixels, color);
+    }
     if (grumpy) draw(_angerMark, _angry);
   }
 
   @override
-  bool shouldRepaint(_KokoPainter old) => old.mood != mood;
+  bool shouldRepaint(_KokoPainter old) =>
+      old.mood != mood || old.pet != pet || old.accessory != accessory;
 }

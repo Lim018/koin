@@ -14,7 +14,11 @@ import 'package:koin/ui/cozy.dart';
 void main() {
   setUpAll(() => initializeDateFormatting('id_ID'));
 
-  Future<void> pumpApp(WidgetTester tester, List<Transaction> txs) async {
+  Future<void> pumpApp(
+    WidgetTester tester,
+    List<Transaction> txs, {
+    int coins = 0,
+  }) async {
     tester.view.physicalSize = const Size(1170, 2532);
     tester.view.devicePixelRatio = 3;
     addTearDown(tester.view.reset);
@@ -22,7 +26,9 @@ void main() {
       ProviderScope(
         overrides: [
           userStateProvider.overrideWith(
-            (ref) => Stream.value(UserState.initial(DateTime.now())),
+            (ref) => Stream.value(
+              UserState.initial(DateTime.now())..savedCoins = coins,
+            ),
           ),
           accountsProvider.overrideWith(
             (ref) => Stream.value([
@@ -160,17 +166,71 @@ void main() {
     expect(tester.widget<FilledButton>(save).onPressed, isNotNull);
   });
 
-  testWidgets('coin chip explains how coins are earned', (tester) async {
-    await pumpApp(tester, [tx(45000, 'Nasi padang')]);
+  Future<void> openShop(WidgetTester tester, int coins) async {
     await tester.tap(
       find.byWidgetPredicate(
-        (w) => w is Semantics && w.properties.label == 'Saldo 0 koin',
+        (w) => w is Semantics && w.properties.label == 'Saldo $coins koin',
       ),
     );
     await tester.pump(const Duration(milliseconds: 600));
+    await tester.pump(const Duration(milliseconds: 600));
+  }
 
+  testWidgets('coin chip opens Toko Koko, whose pill explains coins', (
+    tester,
+  ) async {
+    await pumpApp(tester, [tx(45000, 'Nasi padang')]);
+    await openShop(tester, 0);
+    expect(find.widgetWithText(PageHeader, 'Toko Koko'), findsOneWidget);
+    expect(find.text('Kelinci'), findsOneWidget);
+
+    await tester.tap(find.text('Aksesoris'));
+    await tester.pump();
+    expect(find.text('Mahkota'), findsOneWidget);
+    await tester.tap(find.text('Habitat'));
+    await tester.pump();
+    expect(find.text('Kutub Es'), findsOneWidget);
+
+    await tester.tap(
+      find.byWidgetPredicate(
+        (w) =>
+            w is Semantics &&
+            w.properties.label == 'Saldo 0 koin, cara dapat koin',
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 600));
+    await tester.pump(const Duration(milliseconds: 600));
     expect(find.text('0 koin'), findsOneWidget);
     expect(find.textContaining('Hari ini masih aman'), findsOneWidget);
+  });
+
+  testWidgets('shop only lets you buy what you can afford', (tester) async {
+    await pumpApp(tester, [], coins: 260);
+    await openShop(tester, 260);
+    // The starting pet is free and already worn.
+    await tester.tap(find.text('Koko si Kucing'));
+    await tester.pump();
+    expect(find.widgetWithText(FilledButton, 'Dipakai'), findsOneWidget);
+
+    await tester.tap(find.text('Kelinci'));
+    await tester.pump();
+    final buy = find.widgetWithText(FilledButton, 'Beli');
+    expect(tester.widget<FilledButton>(buy).onPressed, isNotNull);
+
+    await tester.drag(find.byType(ListView), const Offset(0, -400));
+    await tester.pump();
+    await tester.tap(find.text('Panda'));
+    await tester.pump();
+    // Back up to the preview, where the buy button lives.
+    await tester.drag(find.byType(ListView), const Offset(0, 800));
+    await tester.pump();
+    expect(find.text('Kurang 140 koin lagi'), findsOneWidget);
+    expect(
+      tester
+          .widget<FilledButton>(find.widgetWithText(FilledButton, '400 koin'))
+          .onPressed,
+      isNull,
+    );
   });
 
   testWidgets('income shows as +Rp and keeps Koko happy', (tester) async {
