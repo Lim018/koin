@@ -23,6 +23,19 @@ class TransactionParserTest {
     }
 
     @Test
+    fun bluQrisPayment() {
+        val t = TransactionParser.parse(
+            "com.bcadigital.blu",
+            "Yes, Transaksi QRIS Berhasil! · Transaksi di ALWAYS NYEMIL JR Rp 10.000 berhasil",
+        )
+        assertEquals(DetectedTransaction(10_000, "Jajan", "M-Banking"), t)
+        assertEquals(
+            TransactionParser.Source.BANK,
+            TransactionParser.sourceOf("com.bcadigital.blu"),
+        )
+    }
+
+    @Test
     fun indonesianDecimalComma() {
         assertEquals(35_000L, TransactionParser.parseAmount("35.000,00"))
         assertEquals(35_000L, TransactionParser.parseAmount("35.000"))
@@ -35,6 +48,7 @@ class TransactionParserTest {
         assertNull(TransactionParser.parse("ovo.id", "Top Up Rp100.000 berhasil"))
         assertNull(TransactionParser.parse("id.dana", "Kamu menerima Rp50.000 dari Budi"))
         assertNull(TransactionParser.parse("com.gojek.app", "Cashback Rp5.000 masuk, bayar lagi yuk"))
+        assertNull(TransactionParser.parse("com.bcadigital.blu", "Transfer masuk Rp200.000 dari Budi, transaksi berhasil"))
     }
 
     @Test
