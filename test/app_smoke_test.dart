@@ -156,6 +156,10 @@ void main() {
 
   testWidgets('tapping a diary entry opens it for editing', (tester) async {
     await pumpApp(tester, [tx(45000, 'Nasi padang')]);
+    // Centre it so the nav bar and pencil do not cover the row.
+    await tester.scrollUntilVisible(find.text('Nasi padang'), 300);
+    await tester.drag(find.byType(ListView).first, const Offset(0, -200));
+    await tester.pump();
     await tester.tap(find.text('Nasi padang'));
     await tester.pump(const Duration(milliseconds: 600));
 
@@ -243,7 +247,7 @@ void main() {
     expect(find.textContaining('Senang', findRichText: true), findsOneWidget);
     expect(find.text('+Rp 5.000.000'), findsWidgets);
     expect(find.text('Keluar Rp 45.000'), findsOneWidget);
-    expect(find.text('Masuk bulan ini'), findsOneWidget);
+    expect(find.text('Pemasukan'), findsOneWidget);
   });
 
   testWidgets('switching the sheet to income shows income categories', (
@@ -256,7 +260,12 @@ void main() {
     await tester.pump(const Duration(milliseconds: 600));
     expect(find.text('🍔 Makan'), findsOneWidget);
 
-    await tester.tap(find.text('Pemasukan'));
+    await tester.tap(
+      find.descendant(
+        of: find.byWidgetPredicate((w) => w is SegmentedButton),
+        matching: find.text('Pemasukan'),
+      ),
+    );
     await tester.pump();
     expect(find.text('💼 Gaji'), findsOneWidget);
     expect(find.text('🍔 Makan'), findsNothing);

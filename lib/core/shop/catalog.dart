@@ -232,7 +232,7 @@ enum Habitat implements ShopItem {
   kamar(
     'Kamar Hangat',
     0,
-    background: [Color(0xFFF8EFE4), Color(0xFFF3E8DA), Color(0xFFEFE6D8)],
+    canvas: Color(0xFFFAF8F5),
     wall: Color(0xFFFBF1E6),
     floor: (Color(0xFFEEDCC4), Color(0xFFE7D2B6)),
     skirting: Color(0xFFE3CBAE),
@@ -242,7 +242,7 @@ enum Habitat implements ShopItem {
   hutanBambu(
     'Hutan Bambu',
     300,
-    background: [Color(0xFFEDF3E4), Color(0xFFE4EDD8), Color(0xFFDAE6CC)],
+    canvas: Color(0xFFEDF3E4),
     wall: Color(0xFFF1F7E9),
     floor: (Color(0xFFD9E7C6), Color(0xFFCCDDB6)),
     skirting: Color(0xFFB4CB9B),
@@ -252,7 +252,7 @@ enum Habitat implements ShopItem {
   kutubEs(
     'Kutub Es',
     350,
-    background: [Color(0xFFEBF3F8), Color(0xFFE2EDF5), Color(0xFFD8E6F0)],
+    canvas: Color(0xFFEBF3F8),
     wall: Color(0xFFF2F8FC),
     floor: (Color(0xFFDFECF5), Color(0xFFD2E3EF)),
     skirting: Color(0xFFB5CDE0),
@@ -262,7 +262,7 @@ enum Habitat implements ShopItem {
   padangBunga(
     'Padang Bunga',
     400,
-    background: [Color(0xFFFCEDF2), Color(0xFFF7E3EB), Color(0xFFF2D9E4)],
+    canvas: Color(0xFFFCEDF2),
     wall: Color(0xFFFDF3F7),
     floor: (Color(0xFFF5DCE6), Color(0xFFEFCFDC)),
     skirting: Color(0xFFE2B2C6),
@@ -272,7 +272,7 @@ enum Habitat implements ShopItem {
   senjaPantai(
     'Senja Pantai',
     450,
-    background: [Color(0xFFFDEDE0), Color(0xFFF9E2CF), Color(0xFFF4D7C1)],
+    canvas: Color(0xFFFDEDE0),
     wall: Color(0xFFFEF4EA),
     floor: (Color(0xFFF3DEC3), Color(0xFFEDD1B0)),
     skirting: Color(0xFFDBB688),
@@ -282,7 +282,7 @@ enum Habitat implements ShopItem {
   guaKristal(
     'Gua Kristal',
     500,
-    background: [Color(0xFFF1ECF9), Color(0xFFE9E2F5), Color(0xFFE1D9F0)],
+    canvas: Color(0xFFF1ECF9),
     wall: Color(0xFFF5F1FC),
     floor: (Color(0xFFE4DBF2), Color(0xFFD9CDEC)),
     skirting: Color(0xFFC1B0DF),
@@ -293,7 +293,7 @@ enum Habitat implements ShopItem {
   const Habitat(
     this.label,
     this.price, {
-    required this.background,
+    required this.canvas,
     required this.wall,
     required this.floor,
     required this.skirting,
@@ -310,8 +310,8 @@ enum Habitat implements ShopItem {
   @override
   String get id => name;
 
-  /// App background gradient, top to bottom.
-  final List<Color> background;
+  /// Flat app background.
+  final Color canvas;
   final Color wall;
 
   /// Checker floor (light, dark).

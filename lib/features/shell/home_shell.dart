@@ -84,13 +84,6 @@ class _NavBar extends StatelessWidget {
         color: bar,
         borderRadius: BorderRadius.circular(999),
         border: Border.all(color: AppColors.cardBorder),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x1F503723),
-            blurRadius: 24,
-            offset: Offset(0, 8),
-          ),
-        ],
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -183,7 +176,7 @@ class _WriteButton extends StatelessWidget {
       message: 'Catat transaksi',
       child: Material(
         color: const Color(0xFFC0525C),
-        elevation: 6,
+        elevation: 2,
         shadowColor: AppColors.shadow,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         child: InkWell(
