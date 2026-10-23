@@ -168,6 +168,8 @@ class _DiaryRow extends StatelessWidget {
                     ),
                     Text(
                       subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         fontSize: 12,
                         color: AppColors.textSecondary,
@@ -176,6 +178,7 @@ class _DiaryRow extends StatelessWidget {
                   ],
                 ),
               ),
+              const SizedBox(width: 8),
               Text(
                 '${t.isIncome ? '+' : '−'}${formatRupiah(t.amount)}',
                 style: TextStyle(
