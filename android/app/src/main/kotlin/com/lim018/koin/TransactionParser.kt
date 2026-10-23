@@ -30,6 +30,7 @@ object TransactionParser {
         "id.bmri.livin" to App(Source.BANK, "M-Banking"),
         "id.co.bri.brimo" to App(Source.BANK, "M-Banking"),
         "src.com.bni" to App(Source.BANK, "M-Banking"),
+        "com.bcadigital.blu" to App(Source.BANK, "M-Banking"),
         "ovo.id" to App(Source.EWALLET, "OVO"),
         "id.dana" to App(Source.EWALLET, "DANA"),
         "com.shopee.id" to App(Source.EWALLET, "ShopeePay"),
@@ -52,12 +53,12 @@ object TransactionParser {
 
     private val outgoing = Regex(
         """bayar|pembayaran|pembelian|berhasil (?:dibayar|membayar)|transfer ke|""" +
-            """kirim(?:\s+uang)?\s+ke|debit|tarik tunai|payment|paid""",
+            """kirim(?:\s+uang)?\s+ke|debit|tarik tunai|payment|paid|qris|transaksi di\b""",
         RegexOption.IGNORE_CASE,
     )
     private val incoming = Regex(
         """diterima|menerima|uang masuk|dana masuk|top ?up|isi saldo|cashback|""" +
-            """refund|pengembalian|kredit|received""",
+            """refund|pengembalian|kredit|received|transfer masuk""",
         RegexOption.IGNORE_CASE,
     )
 
@@ -67,7 +68,7 @@ object TransactionParser {
     private val categoryKeywords = listOf(
         "Transport" to Regex("""gojek|goride|gocar|grab(?:bike|car)?|maxim|parkir|tol\b|krl|mrt|transjakarta|bensin|pertamina|shell""", RegexOption.IGNORE_CASE),
         "Makan" to Regex("""gofood|grabfood|shopeefood|resto|makan|warung|bakso|nasi|ayam|pizza|mcd|kfc""", RegexOption.IGNORE_CASE),
-        "Jajan" to Regex("""kopi|coffee|starbucks|janji jiwa|kenangan|boba|chatime|indomaret|alfamart""", RegexOption.IGNORE_CASE),
+        "Jajan" to Regex("""kopi|coffee|starbucks|janji jiwa|kenangan|boba|chatime|indomaret|alfamart|nyemil|snack|camilan""", RegexOption.IGNORE_CASE),
         "Tagihan" to Regex("""pln|listrik|token|pulsa|paket data|pdam|bpjs|tagihan|internet|indihome""", RegexOption.IGNORE_CASE),
         "Belanja" to Regex("""tokopedia|shopee|lazada|blibli|tiktok shop|belanja|mart\b""", RegexOption.IGNORE_CASE),
     )

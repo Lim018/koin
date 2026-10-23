@@ -110,7 +110,7 @@ class _SettingsPageState extends State<SettingsPage>
                   Icons.account_balance_outlined,
                   const Color(0xFFF6EDD4),
                   'Baca Notif M-Banking',
-                  'BCA, Livin’ Mandiri, BRImo, BNI',
+                  'BCA, blu, Livin’ Mandiri, BRImo, BNI',
                 ),
                 _toggle(
                   NativeSetting.ewallet,
