@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Peach-to-white glass card from the widget design. -->
+<!-- Opaque warm card so the widget stays readable on any wallpaper. -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
     <corners android:radius="26dp" />
     <gradient
         android:angle="290"
-        android:startColor="#F2FFE9D8"
-        android:endColor="#EBFFFFFF"
+        android:startColor="#FFFFE6D2"
+        android:endColor="#FFFFFBF6"
         android:type="linear" />
-    <stroke android:width="1dp" android:color="#24E8875A" />
+    <stroke android:width="1.5dp" android:color="#59E8875A" />
 </shape>

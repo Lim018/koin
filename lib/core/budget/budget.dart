@@ -39,6 +39,9 @@ DateRange weekRange(DateTime t) {
 DateRange monthRange(DateTime t) =>
     (start: DateTime(t.year, t.month), end: DateTime(t.year, t.month + 1));
 
+DateRange yearRange(DateTime t) =>
+    (start: DateTime(t.year), end: DateTime(t.year + 1));
+
 /// Every entry ever recorded (account balances, profile stats).
 final allTime = (start: DateTime(1970), end: DateTime(9999));
 

@@ -1,8 +1,10 @@
 import 'package:isar_community/isar.dart';
 
 import '../budget/budget.dart';
+import '../categories.dart';
 import '../shop/catalog.dart';
 import 'account.dart';
+import 'custom_category.dart';
 import 'transaction.dart';
 import 'user_state.dart';
 
@@ -64,18 +66,17 @@ class KoinRepository {
       .sortByTimestampDesc()
       .watch(fireImmediately: true);
 
-  /// Today's total and the daily target, read once.
-  Future<({double spent, double budget})> todaySnapshot() async {
-    final range = dayRange(DateTime.now());
-    final txs = await _isar.transactions
-        .where()
-        .timestampBetween(range.start, range.end, includeUpper: false)
-        .findAll();
+  /// Transactions in `[range.start, range.end)`, read once.
+  Future<List<Transaction>> transactionsIn(DateRange range) => _isar
+      .transactions
+      .where()
+      .timestampBetween(range.start, range.end, includeUpper: false)
+      .findAll();
+
+  /// The daily target, read once.
+  Future<double> dailyBudget() async {
     final user = await _isar.userStates.get(UserState.singletonId);
-    return (
-      spent: totalOf(txs),
-      budget: (user ?? UserState.initial(DateTime.now())).dailyBudgetTarget,
-    );
+    return (user ?? UserState.initial(DateTime.now())).dailyBudgetTarget;
   }
 
   /// Accounts in the order they were added.
@@ -124,6 +125,41 @@ class KoinRepository {
     }
     await _isar.accounts.delete(id);
   });
+
+  /// The user's own categories in the order they were added.
+  Stream<List<CustomCategory>> watchCustomCategories() =>
+      _isar.customCategorys.where().watch(fireImmediately: true);
+
+  /// Adds a [kind] category; its label must not clash with another [kind]
+  /// category, built-in or not.
+  Future<CustomCategory> addCategory({
+    required String label,
+    required String emoji,
+    required TransactionKind kind,
+  }) async {
+    final name = label.trim();
+    final icon = emoji.trim();
+    if (name.isEmpty || name.length > 20) {
+      throw ArgumentError.value(label, 'label', 'must be 1–20 chars');
+    }
+    if (icon.isEmpty) throw ArgumentError.value(emoji, 'emoji', 'is empty');
+    final c = CustomCategory()
+      ..label = name
+      ..emoji = icon
+      ..kind = kind;
+    await _write(() async {
+      final existing = await _isar.customCategorys.where().findAll();
+      if (Categories(existing).isTaken(name, kind)) {
+        throw ArgumentError.value(name, 'label', 'sudah dipakai');
+      }
+      await _isar.customCategorys.put(c);
+    });
+    return c;
+  }
+
+  /// Removes the category but keeps its entries (shown as "Lainnya").
+  Future<bool> deleteCategory(int id) =>
+      _write(() => _isar.customCategorys.delete(id));
 
   Stream<UserState> watchUserState() => _isar.userStates
       .watchObject(UserState.singletonId, fireImmediately: true)

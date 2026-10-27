@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="widget_description">Pengeluaran hari ini dan mood Koko, dengan tombol catat cepat.</string>
+    <string name="calendar_widget_description">Kalender bulan ini: hari di bawah dan lewat target harian.</string>
 </resources>
