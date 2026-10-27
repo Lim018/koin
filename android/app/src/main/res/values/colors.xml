@@ -13,4 +13,7 @@
     <color name="sunset_light">#FCE6D7</color>
     <color name="sunset_ink">#A94F28</color>
     <color name="track">#142A211B</color>
+    <!-- Calendar day fills (dayUnderFill / dayOverFill in calendar_page.dart). -->
+    <color name="day_under">#B9D3A8</color>
+    <color name="day_over">#F5B994</color>
 </resources>

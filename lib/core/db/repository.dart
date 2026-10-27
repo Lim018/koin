@@ -66,18 +66,17 @@ class KoinRepository {
       .sortByTimestampDesc()
       .watch(fireImmediately: true);
 
-  /// Today's total and the daily target, read once.
-  Future<({double spent, double budget})> todaySnapshot() async {
-    final range = dayRange(DateTime.now());
-    final txs = await _isar.transactions
-        .where()
-        .timestampBetween(range.start, range.end, includeUpper: false)
-        .findAll();
+  /// Transactions in `[range.start, range.end)`, read once.
+  Future<List<Transaction>> transactionsIn(DateRange range) => _isar
+      .transactions
+      .where()
+      .timestampBetween(range.start, range.end, includeUpper: false)
+      .findAll();
+
+  /// The daily target, read once.
+  Future<double> dailyBudget() async {
     final user = await _isar.userStates.get(UserState.singletonId);
-    return (
-      spent: totalOf(txs),
-      budget: (user ?? UserState.initial(DateTime.now())).dailyBudgetTarget,
-    );
+    return (user ?? UserState.initial(DateTime.now())).dailyBudgetTarget;
   }
 
   /// Accounts in the order they were added.

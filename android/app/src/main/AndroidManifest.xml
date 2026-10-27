@@ -52,6 +52,17 @@
                 android:resource="@xml/koko_widget_info" />
         </receiver>
 
+        <receiver
+            android:name=".CalendarWidgetProvider"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/calendar_widget_info" />
+        </receiver>
+
         <!-- Auto-read payment notifications (PRD 4.3). Enabled by the user in
              system settings; Koin only parses text in memory. -->
         <service
