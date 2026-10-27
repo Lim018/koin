@@ -360,7 +360,7 @@ class _SelectedDay extends StatelessWidget {
         ? 'Belum ada catatan'
         : over
         ? '${formatRupiah(spent)} · lewat ${formatShort(spent - dailyBudget)}'
-        : '${formatRupiah(spent)} · hemat ${formatShort(dailyBudget - spent)}';
+        : '${formatRupiah(spent)} · sisa ${formatShort(dailyBudget - spent)}';
 
     return CozyCard(
       radius: 20,

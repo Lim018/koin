@@ -75,7 +75,7 @@ class _TargetCardState extends ConsumerState<_TargetCard> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Target hemat harian',
+            'Target pengeluaran harian',
             style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
           ),
           Text(
