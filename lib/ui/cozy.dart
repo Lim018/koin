@@ -3,42 +3,37 @@ import 'package:flutter/material.dart';
 import '../core/shop/catalog.dart';
 import '../core/theme/app_colors.dart';
 
-/// White card with a 1px border and a very soft warm shadow.
+/// Flat white card: hairline border, no shadow, radius 20.
 class CozyCard extends StatelessWidget {
   const CozyCard({
     super.key,
     required this.child,
-    this.padding = const EdgeInsets.all(18),
-    this.radius = 24,
+    this.padding = const EdgeInsets.all(20),
+    this.radius = 20,
+    this.color = AppColors.card,
   });
 
   final Widget child;
   final EdgeInsetsGeometry padding;
   final double radius;
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: padding,
       decoration: BoxDecoration(
-        color: AppColors.card,
+        color: color,
         borderRadius: BorderRadius.circular(radius),
         border: Border.all(color: AppColors.cardBorder),
-        boxShadow: const [
-          BoxShadow(
-            color: AppColors.shadow,
-            offset: Offset(0, 10),
-            blurRadius: 28,
-            spreadRadius: -16,
-          ),
-        ],
       ),
       child: child,
     );
   }
 }
 
-/// The gradient behind every screen, in the equipped [habitat]'s colours.
+/// The flat background behind every screen, in the equipped [habitat]'s
+/// colour.
 class CozyBackground extends StatelessWidget {
   const CozyBackground({
     super.key,
@@ -53,36 +48,24 @@ class CozyBackground extends StatelessWidget {
   Widget build(BuildContext context) {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          stops: const [0, 0.6, 1],
-          colors: habitat.background,
-        ),
-      ),
+      color: habitat.canvas,
       child: child,
     );
   }
 }
 
-/// Rounded progress bar; turns sunset orange once [value] passes 1.
+/// Rounded progress bar (styled by the theme); turns terracotta once
+/// [value] passes 1.
 class BudgetBar extends StatelessWidget {
-  const BudgetBar({super.key, required this.value, this.height = 8});
+  const BudgetBar({super.key, required this.value});
 
   final double value;
-  final double height;
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(99),
-      child: LinearProgressIndicator(
-        value: value.clamp(0, 1),
-        minHeight: height,
-        backgroundColor: AppColors.track,
-        color: value > 1 ? AppColors.sunsetSoft : AppColors.sageSoft,
-      ),
+    return LinearProgressIndicator(
+      value: value.clamp(0, 1),
+      color: value > 1 ? AppColors.sunsetSoft : AppColors.sageSoft,
     );
   }
 }

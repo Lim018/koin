@@ -84,21 +84,22 @@ class _NavBar extends StatelessWidget {
         color: bar,
         borderRadius: BorderRadius.circular(999),
         border: Border.all(color: AppColors.cardBorder),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x1F503723),
-            blurRadius: 24,
-            offset: Offset(0, 8),
-          ),
-        ],
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          _tab(0, const _Emoji('📒'), 'Beranda'),
-          _tab(1, const _Emoji('📊'), 'Statistik'),
-          _tab(2, const _Emoji('👛'), 'Bank'),
-          _tab(3, const EquippedKoko(width: 30), 'Profil'),
+          // The selected tab is Flexible: on narrow phones its label
+          // truncates instead of overflowing.
+          for (final (i, icon, label) in [
+            (0, const _Emoji('📒') as Widget, 'Beranda'),
+            (1, const _Emoji('📊'), 'Statistik'),
+            (2, const _Emoji('👛'), 'Bank'),
+            (3, const EquippedKoko(width: 30), 'Profil'),
+          ])
+            if (i == index)
+              Flexible(child: _tab(i, icon, label))
+            else
+              _tab(i, icon, label),
         ],
       ),
     );
@@ -136,23 +137,26 @@ class _NavBar extends StatelessWidget {
                 ),
                 child: icon,
               ),
-              AnimatedSize(
-                duration: const Duration(milliseconds: 220),
-                curve: Curves.easeOutCubic,
-                child: selected
-                    ? Padding(
-                        padding: const EdgeInsets.fromLTRB(8, 0, 10, 0),
-                        child: Text(
-                          label,
-                          maxLines: 1,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.textOnChip,
+              Flexible(
+                child: AnimatedSize(
+                  duration: const Duration(milliseconds: 220),
+                  curve: Curves.easeOutCubic,
+                  child: selected
+                      ? Padding(
+                          padding: const EdgeInsets.fromLTRB(8, 0, 10, 0),
+                          child: Text(
+                            label,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.textOnChip,
+                            ),
                           ),
-                        ),
-                      )
-                    : const SizedBox.shrink(),
+                        )
+                      : const SizedBox.shrink(),
+                ),
               ),
             ],
           ),
@@ -183,7 +187,7 @@ class _WriteButton extends StatelessWidget {
       message: 'Catat transaksi',
       child: Material(
         color: const Color(0xFFC0525C),
-        elevation: 6,
+        elevation: 2,
         shadowColor: AppColors.shadow,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         child: InkWell(

@@ -217,8 +217,10 @@ class _AccountRow extends StatelessWidget {
 }
 
 /// Add an account, or change/delete [editing].
-Future<void> showAccountSheet(BuildContext context, {Account? editing}) =>
-    showCozySheet(
+/// Adds or edits an account; completes with the saved account's name (null
+/// when dismissed or deleted).
+Future<String?> showAccountSheet(BuildContext context, {Account? editing}) =>
+    showCozySheet<String>(
       context,
       title: editing == null ? 'Tambah rekening' : 'Ubah rekening',
       child: AccountForm(editing: editing),
@@ -257,14 +259,19 @@ class _AccountFormState extends ConsumerState<AccountForm> {
     super.dispose();
   }
 
-  Future<void> _run(Future<void> Function() action, String done) async {
+  /// Runs [action], then closes the sheet with [result].
+  Future<void> _run(
+    Future<void> Function() action,
+    String done, {
+    String? result,
+  }) async {
     if (_busy) return;
     setState(() => _busy = true);
     final messenger = ScaffoldMessenger.of(context);
     final navigator = Navigator.of(context);
     try {
       await action();
-      navigator.pop();
+      navigator.pop(result);
       messenger.showSnackBar(SnackBar(content: Text(done)));
     } catch (e) {
       if (!mounted) return;
@@ -289,6 +296,7 @@ class _AccountFormState extends ConsumerState<AccountForm> {
     return _run(
       () => ref.read(repositoryProvider).saveAccount(account),
       editing == null ? 'Rekening ditambahkan' : 'Rekening disimpan',
+      result: account.name,
     );
   }
 

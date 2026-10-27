@@ -18,8 +18,9 @@ void main() {
     WidgetTester tester,
     List<Transaction> txs, {
     int coins = 0,
+    Size size = const Size(1170, 2532),
   }) async {
-    tester.view.physicalSize = const Size(1170, 2532);
+    tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 3;
     addTearDown(tester.view.reset);
     await tester.pumpWidget(
@@ -102,6 +103,8 @@ void main() {
     await tester.pump();
     expect(find.text('Total Pengeluaran Bulan Ini'), findsNothing);
     expect(find.widgetWithText(PageHeader, 'Statistik'), findsOneWidget);
+    // The pie breakdown lists the entry's category at 100%.
+    expect(find.text('100%'), findsOneWidget);
 
     await openTab(tester, 'Bank');
     expect(find.widgetWithText(PageHeader, 'Bank'), findsOneWidget);
@@ -111,7 +114,7 @@ void main() {
     // The daily target lives in "Profil", next to the other settings.
     await openTab(tester, 'Profil');
     expect(find.widgetWithText(PageHeader, 'Profil'), findsOneWidget);
-    expect(find.text('Target hemat harian'), findsOneWidget);
+    expect(find.text('Target pengeluaran harian'), findsOneWidget);
     expect(find.text('Simpan target'), findsOneWidget);
   });
 
@@ -154,8 +157,24 @@ void main() {
     expect(tester.widget<FilledButton>(save).onPressed, isNotNull);
   });
 
+  testWidgets('Beranda fits a small phone without overflowing', (tester) async {
+    // 360×640 dp; overflow errors would fail the test.
+    await pumpApp(tester, [
+      for (var i = 1; i <= 12; i++) tx(i * 1000.0, 'Jajan $i'),
+    ], size: const Size(1080, 1920));
+    expect(
+      find.textContaining('Mood Koko', findRichText: true),
+      findsOneWidget,
+    );
+    expect(find.text('Budget minggu ini').hitTestable(), findsOneWidget);
+    expect(find.text('Selisih bulan ini').hitTestable(), findsOneWidget);
+    expect(find.text('Diary hari ini').hitTestable(), findsOneWidget);
+  });
+
   testWidgets('tapping a diary entry opens it for editing', (tester) async {
     await pumpApp(tester, [tx(45000, 'Nasi padang')]);
+    // Beranda fits one screen: the entry is visible without scrolling.
+    expect(find.text('Nasi padang').hitTestable(), findsOneWidget);
     await tester.tap(find.text('Nasi padang'));
     await tester.pump(const Duration(milliseconds: 600));
 
@@ -243,7 +262,7 @@ void main() {
     expect(find.textContaining('Senang', findRichText: true), findsOneWidget);
     expect(find.text('+Rp 5.000.000'), findsWidgets);
     expect(find.text('Keluar Rp 45.000'), findsOneWidget);
-    expect(find.text('Masuk bulan ini'), findsOneWidget);
+    expect(find.text('Pemasukan bulan ini'), findsOneWidget);
   });
 
   testWidgets('switching the sheet to income shows income categories', (
@@ -256,7 +275,12 @@ void main() {
     await tester.pump(const Duration(milliseconds: 600));
     expect(find.text('🍔 Makan'), findsOneWidget);
 
-    await tester.tap(find.text('Pemasukan'));
+    await tester.tap(
+      find.descendant(
+        of: find.byWidgetPredicate((w) => w is SegmentedButton),
+        matching: find.text('Pemasukan'),
+      ),
+    );
     await tester.pump();
     expect(find.text('💼 Gaji'), findsOneWidget);
     expect(find.text('🍔 Makan'), findsNothing);

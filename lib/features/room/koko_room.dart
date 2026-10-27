@@ -13,7 +13,7 @@ class KokoRoom extends StatelessWidget {
     required this.mood,
     required this.look,
     this.bubble,
-    this.height = 210,
+    this.height = designHeight,
   });
 
   final KokoMood mood;
@@ -21,14 +21,18 @@ class KokoRoom extends StatelessWidget {
 
   /// Speech bubble text, top right.
   final String? bubble;
+
+  /// The room scales its contents to this height ([designHeight] = 1:1).
   final double height;
 
+  static const designHeight = 210.0;
   static const _floorHeight = 70.0;
 
   @override
   Widget build(BuildContext context) {
     final habitat = look.habitat;
     final bubble = this.bubble;
+    final scale = height / designHeight;
     return ClipRRect(
       borderRadius: BorderRadius.circular(16),
       child: AnimatedContainer(
@@ -41,31 +45,44 @@ class KokoRoom extends StatelessWidget {
               left: 0,
               right: 0,
               bottom: 0,
-              height: _floorHeight,
+              height: _floorHeight * scale,
               child: CustomPaint(painter: _CheckerFloor(habitat.floor)),
             ),
             Positioned(
               left: 0,
               right: 0,
-              bottom: _floorHeight,
-              height: 6,
+              bottom: _floorHeight * scale,
+              height: 6 * scale,
               child: ColoredBox(color: habitat.skirting),
             ),
-            Positioned(left: 20, top: 20, child: _Window(habitat.window)),
+            Positioned(
+              left: 20 * scale,
+              top: 20 * scale,
+              child: Transform.scale(
+                scale: scale,
+                alignment: Alignment.topLeft,
+                child: _Window(habitat.window),
+              ),
+            ),
             if (bubble != null)
               Positioned(
-                right: 14,
-                top: 18,
-                child: _SpeechBubble(text: bubble),
+                right: 14 * scale,
+                top: 18 * scale,
+                child: Transform.scale(
+                  // Text stays readable on short rooms.
+                  scale: scale.clamp(0.8, 1),
+                  alignment: Alignment.topRight,
+                  child: _SpeechBubble(text: bubble),
+                ),
               ),
             Positioned(
               left: 0,
               right: 0,
-              bottom: 24,
+              bottom: 24 * scale,
               child: Center(
                 child: KokoSprite(
                   mood: mood,
-                  width: 100,
+                  width: 100 * scale,
                   hop: true,
                   pet: look.pet,
                   accessory: look.accessory,
