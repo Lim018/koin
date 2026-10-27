@@ -1,17 +1,44 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/budget/budget.dart';
+import '../../core/categories.dart';
+import '../../core/db/transaction.dart';
 import '../../core/format.dart';
 import '../../core/providers.dart';
 import '../../core/theme/app_colors.dart';
 import '../../ui/cozy.dart';
 import '../shell/home_shell.dart';
 
-enum _Period { week, month }
+enum _Period {
+  weekly('Mingguan'),
+  monthly('Bulanan'),
+  annually('Tahunan'),
+  custom('Periode');
 
-/// Spending per day vs. the daily target.
+  const _Period(this.label);
+
+  final String label;
+}
+
+/// Slice colours by rank, largest category first.
+const _sliceColors = [
+  Color(0xFFF2735F),
+  Color(0xFFF79A5B),
+  Color(0xFFF6C344),
+  Color(0xFFE9DC4A),
+  Color(0xFFB5D65A),
+  Color(0xFF7FB77E),
+  Color(0xFF6FA8C9),
+  Color(0xFFA78BC9),
+];
+const _restColor = Color(0xFFC9BFB4);
+
+/// Spending (or income) per category as a pie chart, for a week, month, year
+/// or a picked period.
 class InsightView extends ConsumerStatefulWidget {
   const InsightView({super.key, required this.viewSwitch});
 
@@ -23,16 +50,71 @@ class InsightView extends ConsumerStatefulWidget {
 }
 
 class _InsightViewState extends ConsumerState<InsightView> {
-  var _period = _Period.week;
+  var _period = _Period.monthly;
+  var _kind = TransactionKind.expense;
+
+  /// A day inside the shown week/month/year.
+  late DateTime _anchor = dateOnly(DateTime.now());
+
+  /// The picked range for [_Period.custom]; defaults to this month.
+  late DateRange _custom = monthRange(_anchor);
+
+  DateRange get _range => switch (_period) {
+    _Period.weekly => weekRange(_anchor),
+    _Period.monthly => monthRange(_anchor),
+    _Period.annually => yearRange(_anchor),
+    _Period.custom => _custom,
+  };
+
+  void _shift(int delta) => setState(() {
+    final a = _anchor;
+    _anchor = switch (_period) {
+      _Period.weekly => DateTime(a.year, a.month, a.day + 7 * delta),
+      _Period.monthly => DateTime(a.year, a.month + delta),
+      _Period.annually => DateTime(a.year + delta),
+      _Period.custom => a,
+    };
+  });
+
+  Future<void> _pickRange() async {
+    final today = ref.read(todayProvider);
+    final picked = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(today.year + 1, 12, 31),
+      initialDateRange: DateTimeRange(
+        start: _custom.start,
+        end: _custom.end.subtract(const Duration(days: 1)),
+      ),
+      helpText: 'Pilih periode',
+      saveText: 'PAKAI',
+    );
+    if (picked == null) return;
+    setState(() {
+      _custom = (
+        start: dateOnly(picked.start),
+        end: DateTime(picked.end.year, picked.end.month, picked.end.day + 1),
+      );
+    });
+  }
+
+  String _label(DateRange r) {
+    final last = DateTime(r.end.year, r.end.month, r.end.day - 1);
+    return switch (_period) {
+      _Period.monthly => DateFormat('MMMM yyyy', 'id_ID').format(r.start),
+      _Period.annually => '${r.start.year}',
+      _ =>
+        '${DateFormat('d MMM', 'id_ID').format(r.start)} – '
+            '${DateFormat('d MMM yyyy', 'id_ID').format(last)}',
+    };
+  }
 
   @override
   Widget build(BuildContext context) {
-    final today = ref.watch(todayProvider);
-    final range = _period == _Period.week
-        ? weekRange(today)
-        : monthRange(today);
+    final range = _range;
     final txs = ref.watch(transactionsProvider(range));
-    final user = ref.watch(userStateProvider);
+    final categories =
+        ref.watch(categoriesProvider).valueOrNull ?? Categories();
 
     return SafeArea(
       bottom: false,
@@ -40,34 +122,81 @@ class _InsightViewState extends ConsumerState<InsightView> {
         padding: const EdgeInsets.fromLTRB(20, 20, 20, navBarClearance),
         children: [
           PageHeader(
-            context: DateFormat('MMMM yyyy', 'id_ID').format(today),
+            context: 'Per kategori',
             title: 'Statistik',
             actions: [
-              SegmentedButton<_Period>(
-                showSelectedIcon: false,
-                segments: const [
-                  ButtonSegment(value: _Period.week, label: Text('Minggu')),
-                  ButtonSegment(value: _Period.month, label: Text('Bulan')),
+              PopupMenuButton<_Period>(
+                tooltip: 'Pilih rentang',
+                initialValue: _period,
+                onSelected: (p) {
+                  setState(() => _period = p);
+                  if (p == _Period.custom) _pickRange();
+                },
+                itemBuilder: (context) => [
+                  for (final p in _Period.values)
+                    PopupMenuItem(value: p, child: Text(p.label)),
                 ],
-                selected: {_period},
-                onSelectionChanged: (s) => setState(() => _period = s.first),
+                child: Container(
+                  height: 40,
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  decoration: BoxDecoration(
+                    color: AppColors.card,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: AppColors.cardBorder),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        _period.label,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const Icon(Icons.expand_more_rounded, size: 20),
+                    ],
+                  ),
+                ),
               ),
             ],
           ),
           const SizedBox(height: 16),
           widget.viewSwitch,
-          const SizedBox(height: 16),
-          switch ((txs, user)) {
-            (AsyncData(value: final t), AsyncData(value: final u)) =>
-              _SpendingCard(
-                period: _period,
-                range: range,
-                today: today,
-                totals: dailyTotals(t),
-                dailyBudget: u.dailyBudgetTarget,
+          const SizedBox(height: 12),
+          _RangeBar(
+            label: _label(range),
+            onPrevious: _period == _Period.custom ? null : () => _shift(-1),
+            onNext: _period == _Period.custom ? null : () => _shift(1),
+            onPick: _period == _Period.custom ? _pickRange : null,
+          ),
+          const SizedBox(height: 12),
+          SegmentedButton<TransactionKind>(
+            showSelectedIcon: false,
+            expandedInsets: EdgeInsets.zero,
+            segments: const [
+              ButtonSegment(
+                value: TransactionKind.expense,
+                label: Text('Pengeluaran'),
               ),
-            (AsyncError(:final error), _) ||
-            (_, AsyncError(:final error)) => ErrorText(error),
+              ButtonSegment(
+                value: TransactionKind.income,
+                label: Text('Pemasukan'),
+              ),
+            ],
+            selected: {_kind},
+            onSelectionChanged: (s) => setState(() => _kind = s.first),
+          ),
+          const SizedBox(height: 12),
+          switch (txs) {
+            AsyncData(value: final t) => _Breakdown(
+              kind: _kind,
+              slices: _slices([
+                for (final x in t)
+                  if (x.kind == _kind) x,
+              ], categories),
+            ),
+            AsyncError(:final error) => ErrorText(error),
             _ => const SizedBox(
               height: 280,
               child: Center(child: CircularProgressIndicator()),
@@ -79,241 +208,222 @@ class _InsightViewState extends ConsumerState<InsightView> {
   }
 }
 
-class _SpendingCard extends StatelessWidget {
-  const _SpendingCard({
-    required this.period,
-    required this.range,
-    required this.today,
-    required this.totals,
-    required this.dailyBudget,
-  });
+typedef _Slice = ({TxCategory category, double amount, Color color});
 
-  final _Period period;
-  final DateRange range;
-  final DateTime today;
-  final Map<DateTime, double> totals;
-  final double dailyBudget;
-
-  @override
-  Widget build(BuildContext context) {
-    final days = [
-      for (
-        var d = range.start;
-        d.isBefore(range.end);
-        d = DateTime(d.year, d.month, d.day + 1)
-      )
-        d,
-    ];
-    final total = totals.values.fold(0.0, (a, b) => a + b);
-    final budget = dailyBudget * days.length;
-    final ratio = budget > 0 ? total / budget : 0.0;
-    final isWeek = period == _Period.week;
-
-    return CozyCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      isWeek
-                          ? 'Pengeluaran minggu ini'
-                          : 'Pengeluaran bulan ini',
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                    Text(
-                      formatRupiah(total),
-                      style: const TextStyle(
-                        fontSize: 26,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.6,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              StatusPill(
-                label: '${(ratio * 100).round()}% budget',
-                over: ratio > 1,
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            height: 170,
-            child: _BarChart(
-              days: days,
-              today: today,
-              totals: totals,
-              dailyBudget: dailyBudget,
-              labelFor: isWeek
-                  ? (d) => DateFormat.E('id_ID').format(d)
-                  : (d) => (d.day == 1 || d.day % 7 == 0) ? '${d.day}' : '',
-              showValues: isWeek,
-            ),
-          ),
-        ],
+/// Totals per category, largest first, coloured by rank.
+List<_Slice> _slices(List<Transaction> txs, Categories categories) {
+  final byLabel = <String, ({TxCategory category, double amount})>{};
+  for (final t in txs) {
+    final c = categories.of(t);
+    final prev = byLabel[c.label];
+    byLabel[c.label] = (category: c, amount: (prev?.amount ?? 0) + t.amount);
+  }
+  final sorted = byLabel.values.toList()
+    ..sort((a, b) => b.amount.compareTo(a.amount));
+  return [
+    for (final (i, s) in sorted.indexed)
+      (
+        category: s.category,
+        amount: s.amount,
+        color: i < _sliceColors.length ? _sliceColors[i] : _restColor,
       ),
-    );
-  }
+  ];
 }
 
-class _BarChart extends StatelessWidget {
-  const _BarChart({
-    required this.days,
-    required this.today,
-    required this.totals,
-    required this.dailyBudget,
-    required this.labelFor,
-    required this.showValues,
-  });
-
-  final List<DateTime> days;
-  final DateTime today;
-  final Map<DateTime, double> totals;
-  final double dailyBudget;
-  final String Function(DateTime) labelFor;
-  final bool showValues;
-
-  static const _labelHeight = 18.0;
-  static const _valueHeight = 16.0;
-
-  @override
-  Widget build(BuildContext context) {
-    final maxDay = totals.values.fold(0.0, (a, b) => a > b ? a : b);
-    final scale = (maxDay > dailyBudget ? maxDay : dailyBudget) * 1.15;
-
-    return LayoutBuilder(
-      builder: (context, c) {
-        final plot = c.maxHeight - _labelHeight - _valueHeight;
-        final targetY = scale > 0 ? plot * dailyBudget / scale : 0.0;
-
-        return Stack(
-          children: [
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: _labelHeight + targetY,
-              child: Row(
-                children: [
-                  const Expanded(child: _DashedLine()),
-                  Text(
-                    ' Target ${formatShort(dailyBudget)}',
-                    style: const TextStyle(
-                      fontSize: 10,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                for (final d in days)
-                  Expanded(
-                    child: _Bar(
-                      value: totals[d] ?? 0,
-                      height: scale > 0 ? plot * (totals[d] ?? 0) / scale : 0,
-                      over: (totals[d] ?? 0) > dailyBudget,
-                      isFuture: d.isAfter(today),
-                      isToday: d == today,
-                      label: labelFor(d),
-                      showValue: showValues,
-                      gap: days.length > 7 ? 1.5 : 6,
-                    ),
-                  ),
-              ],
-            ),
-          ],
-        );
-      },
-    );
-  }
-}
-
-class _Bar extends StatelessWidget {
-  const _Bar({
-    required this.value,
-    required this.height,
-    required this.over,
-    required this.isFuture,
-    required this.isToday,
+class _RangeBar extends StatelessWidget {
+  const _RangeBar({
     required this.label,
-    required this.showValue,
-    required this.gap,
+    required this.onPrevious,
+    required this.onNext,
+    required this.onPick,
   });
 
-  final double value;
-  final double height;
-  final bool over;
-  final bool isFuture;
-  final bool isToday;
   final String label;
-  final bool showValue;
-  final double gap;
+  final VoidCallback? onPrevious;
+  final VoidCallback? onNext;
+
+  /// Opens the range picker ([_Period.custom] only).
+  final VoidCallback? onPick;
 
   @override
   Widget build(BuildContext context) {
-    final color = isFuture
-        ? AppColors.track
-        : over
-        ? AppColors.sunsetSoft
-        : AppColors.sageSoft;
-
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: gap / 2),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.end,
+    final pick = onPick;
+    return CozyCard(
+      radius: 20,
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+      child: Row(
         children: [
-          SizedBox(
-            height: _BarChart._valueHeight,
-            child: showValue && value > 0
+          if (pick == null)
+            IconButton(
+              tooltip: 'Sebelumnya',
+              onPressed: onPrevious,
+              icon: const Icon(Icons.chevron_left_rounded),
+            ),
+          Expanded(
+            child: pick == null
                 ? Text(
-                    formatShort(value),
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
-                      color: over
-                          ? AppColors.sunsetInk
-                          : AppColors.textSecondary,
+                    label,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
                     ),
                   )
-                : null,
+                : TextButton.icon(
+                    onPressed: pick,
+                    icon: const Icon(Icons.date_range_rounded),
+                    label: Text(label),
+                  ),
           ),
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 300),
-            height: isFuture ? 6 : height.clamp(2, double.infinity),
-            decoration: BoxDecoration(
-              color: color,
-              borderRadius: BorderRadius.circular(gap > 2 ? 6 : 2),
+          if (pick == null)
+            IconButton(
+              tooltip: 'Berikutnya',
+              onPressed: onNext,
+              icon: const Icon(Icons.chevron_right_rounded),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Breakdown extends StatelessWidget {
+  const _Breakdown({required this.kind, required this.slices});
+
+  final TransactionKind kind;
+  final List<_Slice> slices;
+
+  @override
+  Widget build(BuildContext context) {
+    final income = kind == TransactionKind.income;
+    final total = slices.fold(0.0, (a, s) => a + s.amount);
+    if (total <= 0) {
+      return CozyCard(
+        child: SizedBox(
+          height: 160,
+          child: Center(
+            child: Text(
+              income
+                  ? 'Belum ada pemasukan di rentang ini'
+                  : 'Belum ada pengeluaran di rentang ini',
+              style: const TextStyle(color: AppColors.textSecondary),
             ),
           ),
-          SizedBox(
-            height: _BarChart._labelHeight,
-            child: Align(
-              alignment: Alignment.bottomCenter,
-              child: Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.visible,
-                softWrap: false,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: isToday ? FontWeight.w700 : FontWeight.w500,
-                  color: isToday
-                      ? AppColors.textPrimary
-                      : AppColors.textSecondary,
+        ),
+      );
+    }
+
+    return Column(
+      children: [
+        CozyCard(
+          child: Center(
+            child: SizedBox.square(
+              dimension: 220,
+              child: Semantics(
+                label: [
+                  for (final s in slices)
+                    '${s.category.label} '
+                        '${(s.amount / total * 100).round()} persen',
+                ].join(', '),
+                excludeSemantics: true,
+                child: CustomPaint(
+                  painter: _PiePainter(slices: slices, total: total),
+                  child: Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          income ? 'Pemasukan' : 'Pengeluaran',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                        Text(
+                          formatShort(total),
+                          style: const TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        CozyCard(
+          padding: const EdgeInsets.symmetric(vertical: 6),
+          child: Column(
+            children: [
+              for (final (i, s) in slices.indexed) ...[
+                if (i > 0)
+                  const Divider(
+                    height: 1,
+                    indent: 16,
+                    endIndent: 16,
+                    color: AppColors.track,
+                  ),
+                _SliceRow(slice: s, share: s.amount / total),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SliceRow extends StatelessWidget {
+  const _SliceRow({required this.slice, required this.share});
+
+  final _Slice slice;
+  final double share;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        children: [
+          Container(
+            width: 48,
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: slice.color,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              '${(share * 100).round()}%',
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Text(slice.category.emoji, style: const TextStyle(fontSize: 18)),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              slice.category.label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+            ),
+          ),
+          Text(
+            formatRupiah(slice.amount),
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              fontFeatures: [FontFeature.tabularFigures()],
             ),
           ),
         ],
@@ -322,26 +432,42 @@ class _Bar extends StatelessWidget {
   }
 }
 
-class _DashedLine extends StatelessWidget {
-  const _DashedLine();
+/// Donut chart: one arc per slice, clockwise from 12 o'clock.
+class _PiePainter extends CustomPainter {
+  _PiePainter({required this.slices, required this.total});
+
+  final List<_Slice> slices;
+  final double total;
+
+  static const _thickness = 44.0;
 
   @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, c) {
-        final count = (c.maxWidth / 8).floor();
-        return Row(
-          children: [
-            for (var i = 0; i < count; i++)
-              Container(
-                width: 4,
-                height: 1,
-                margin: const EdgeInsets.only(right: 4),
-                color: AppColors.textMuted,
-              ),
-          ],
-        );
-      },
+  void paint(Canvas canvas, Size size) {
+    final rect = Rect.fromCircle(
+      center: size.center(Offset.zero),
+      radius: size.shortestSide / 2 - _thickness / 2,
     );
+    final paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = _thickness;
+    // Thin gaps between slices, unless one slice is the whole circle.
+    final gap = slices.length > 1 ? 0.02 : 0.0;
+    var start = -math.pi / 2;
+    for (final s in slices) {
+      final sweep = s.amount / total * 2 * math.pi;
+      paint.color = s.color;
+      canvas.drawArc(
+        rect,
+        start + gap / 2,
+        math.max(sweep - gap, 0.001),
+        false,
+        paint,
+      );
+      start += sweep;
+    }
   }
+
+  @override
+  bool shouldRepaint(_PiePainter old) =>
+      old.slices != slices || old.total != total;
 }

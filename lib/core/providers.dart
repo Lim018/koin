@@ -44,9 +44,8 @@ final accountsProvider = StreamProvider<List<Account>>(
 
 /// Built-in plus user-added categories.
 final categoriesProvider = StreamProvider<Categories>(
-  (ref) => ref.watch(repositoryProvider).watchCustomCategories().map(
-    Categories.new,
-  ),
+  (ref) =>
+      ref.watch(repositoryProvider).watchCustomCategories().map(Categories.new),
 );
 
 /// Equipped pet, accessory and habitat; the default look while loading.
