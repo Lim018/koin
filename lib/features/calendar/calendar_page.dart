@@ -8,7 +8,6 @@ import '../../core/format.dart';
 import '../../core/providers.dart';
 import '../../core/theme/app_colors.dart';
 import '../../ui/cozy.dart';
-import '../add/transaction_form.dart';
 import '../diary/diary_list.dart';
 import '../shell/home_shell.dart';
 
@@ -21,6 +20,11 @@ List<DateTime?> monthGrid(DateTime month) {
     for (var d = 1; d <= days; d++) DateTime(month.year, month.month, d),
   ];
 }
+
+/// Day fills on the calendar grid (and its legend): strong enough to read
+/// at a glance, light enough for the day number on top.
+const dayUnderFill = Color(0xFFB9D3A8);
+const dayOverFill = Color(0xFFF5B994);
 
 /// "Monthly Diary": pocket-planner grid with under/over-budget dots.
 class CalendarView extends ConsumerStatefulWidget {
@@ -195,11 +199,11 @@ class _Body extends StatelessWidget {
                 runSpacing: 6,
                 children: [
                   _Legend(
-                    color: AppColors.sageSoft,
+                    color: dayUnderFill,
                     label: 'Di bawah target · $underDays hari',
                   ),
                   _Legend(
-                    color: AppColors.sunsetSoft,
+                    color: dayOverFill,
                     label: 'Lewat target · $overDays hari',
                   ),
                 ],
@@ -214,13 +218,10 @@ class _Body extends StatelessWidget {
           // A day with only income still has entries: show Rp 0 spent.
           total: totals[selected] ?? (dayTransactions.isEmpty ? null : 0),
           dailyBudget: dailyBudget,
-          onAdd: selected.isAfter(today)
-              ? null
-              : () => showTransactionSheet(context, day: selected),
         ),
         if (dayTransactions.isNotEmpty) ...[
           const SizedBox(height: 8),
-          DiaryList(transactions: dayTransactions),
+          DiaryList(transactions: dayTransactions, readOnly: true),
         ],
         const SizedBox(height: 12),
         _MonthSummary(
@@ -257,11 +258,11 @@ class _DayCell extends StatelessWidget {
   Widget build(BuildContext context) {
     final total = this.total;
     final over = total != null && total > dailyBudget;
-    final dot = total == null
-        ? Colors.transparent
-        : over
-        ? AppColors.sunsetSoft
-        : AppColors.sageSoft;
+    final (fill, ink) = switch (total) {
+      null => (Colors.transparent, AppColors.textPrimary),
+      _ when over => (dayOverFill, AppColors.sunsetInk),
+      _ => (dayUnderFill, AppColors.sageDark),
+    };
 
     return Semantics(
       button: true,
@@ -271,37 +272,25 @@ class _DayCell extends StatelessWidget {
           '${total == null ? 'belum ada catatan' : '${formatRupiah(total)}, ${over ? 'lewat target' : 'di bawah target'}'}',
       excludeSemantics: true,
       child: InkWell(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(12),
         onTap: onTap,
         child: Container(
-          margin: const EdgeInsets.all(1),
-          decoration: isSelected
-              ? BoxDecoration(
-                  color: AppColors.sageLight,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: AppColors.sage, width: 1.5),
-                )
-              : null,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                '${day.day}',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-                  color: isFuture
-                      ? const Color(0xFFB3A698)
-                      : AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Container(
-                width: 5,
-                height: 5,
-                decoration: BoxDecoration(color: dot, shape: BoxShape.circle),
-              ),
-            ],
+          margin: const EdgeInsets.all(2),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: fill,
+            borderRadius: BorderRadius.circular(12),
+            border: isSelected
+                ? Border.all(color: AppColors.textPrimary, width: 2)
+                : null,
+          ),
+          child: Text(
+            '${day.day}',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: total == null ? FontWeight.w600 : FontWeight.w800,
+              color: isFuture ? const Color(0xFFB3A698) : ink,
+            ),
           ),
         ),
       ),
@@ -321,9 +310,12 @@ class _Legend extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          width: 8,
-          height: 8,
-          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          width: 14,
+          height: 14,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(4),
+          ),
         ),
         const SizedBox(width: 6),
         Text(
@@ -341,16 +333,12 @@ class _SelectedDay extends StatelessWidget {
     required this.isToday,
     required this.total,
     required this.dailyBudget,
-    required this.onAdd,
   });
 
   final DateTime day;
   final bool isToday;
   final double? total;
   final double dailyBudget;
-
-  /// Records an entry on [day]; null for future days.
-  final VoidCallback? onAdd;
 
   @override
   Widget build(BuildContext context) {
@@ -410,18 +398,6 @@ class _SelectedDay extends StatelessWidget {
               ],
             ),
           ),
-          if (onAdd != null) ...[
-            const SizedBox(width: 8),
-            IconButton.filledTonal(
-              tooltip: 'Catat di tanggal ini',
-              onPressed: onAdd,
-              icon: const Icon(Icons.add_rounded),
-              style: IconButton.styleFrom(
-                backgroundColor: AppColors.sageLight,
-                foregroundColor: AppColors.sageDark,
-              ),
-            ),
-          ],
         ],
       ),
     );

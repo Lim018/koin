@@ -10,13 +10,20 @@ import '../../core/theme/app_colors.dart';
 import '../../ui/cozy.dart';
 import '../add/transaction_form.dart';
 
-/// A day's entries: tap to edit, swipe left to delete (with undo). Shows
-/// [emptyText] in a card when there are none, or nothing if it is null.
+/// A day's entries: tap to edit, swipe left to delete (with undo) unless
+/// [readOnly]. Shows [emptyText] in a card when there are none, or nothing if
+/// it is null.
 class DiaryList extends ConsumerStatefulWidget {
-  const DiaryList({super.key, required this.transactions, this.emptyText});
+  const DiaryList({
+    super.key,
+    required this.transactions,
+    this.emptyText,
+    this.readOnly = false,
+  });
 
   final List<Transaction> transactions;
   final String? emptyText;
+  final bool readOnly;
 
   @override
   ConsumerState<DiaryList> createState() => _DiaryListState();
@@ -81,8 +88,10 @@ class _DiaryListState extends ConsumerState<DiaryList> {
               ),
             _DiaryRow(
               transaction: t,
-              onTap: () => showTransactionSheet(context, editing: t),
-              onDismissed: () => _delete(t),
+              onTap: widget.readOnly
+                  ? null
+                  : () => showTransactionSheet(context, editing: t),
+              onDismissed: widget.readOnly ? null : () => _delete(t),
             ),
           ],
         ],
@@ -99,8 +108,10 @@ class _DiaryRow extends StatelessWidget {
   });
 
   final Transaction transaction;
-  final VoidCallback onTap;
-  final VoidCallback onDismissed;
+
+  /// Both null when the list is read-only.
+  final VoidCallback? onTap;
+  final VoidCallback? onDismissed;
 
   @override
   Widget build(BuildContext context) {
@@ -114,14 +125,16 @@ class _DiaryRow extends StatelessWidget {
 
     return Dismissible(
       key: ValueKey(t.id),
-      direction: DismissDirection.endToStart,
+      direction: onDismissed == null
+          ? DismissDirection.none
+          : DismissDirection.endToStart,
       background: Container(
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 20),
         color: AppColors.sunsetLight,
         child: const Icon(Icons.delete_outline, color: AppColors.sunsetInk),
       ),
-      onDismissed: (_) => onDismissed(),
+      onDismissed: (_) => onDismissed?.call(),
       child: InkWell(
         onTap: onTap,
         child: Padding(
