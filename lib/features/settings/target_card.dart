@@ -34,32 +34,48 @@ class _TargetCard extends ConsumerStatefulWidget {
 }
 
 class _TargetCardState extends ConsumerState<_TargetCard> {
-  static const _min = 50000.0;
-  static const _max = 500000.0;
-  static const _step = 10000.0;
-
-  late double _value = _clampTarget(widget.user.dailyBudgetTarget);
+  late final _input = TextEditingController(
+    text: formatThousands(widget.user.dailyBudgetTarget),
+  );
   var _saving = false;
 
-  static double _clampTarget(double v) => v.clamp(_min, _max);
+  double? get _value => parseRupiah(_input.text);
 
-  bool get _dirty => _value != widget.user.dailyBudgetTarget;
+  bool get _dirty {
+    final v = _value;
+    return v != null && v > 0 && v != widget.user.dailyBudgetTarget;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _input.addListener(() => setState(() {}));
+  }
+
+  @override
+  void dispose() {
+    _input.dispose();
+    super.dispose();
+  }
 
   @override
   void didUpdateWidget(_TargetCard old) {
     super.didUpdateWidget(old);
     if (old.user.dailyBudgetTarget != widget.user.dailyBudgetTarget) {
-      _value = _clampTarget(widget.user.dailyBudgetTarget);
+      _input.text = formatThousands(widget.user.dailyBudgetTarget);
     }
   }
 
   Future<void> _save() async {
+    final value = _value;
+    if (value == null || !_dirty || _saving) return;
+    FocusScope.of(context).unfocus();
     setState(() => _saving = true);
     final messenger = ScaffoldMessenger.of(context);
     try {
-      await ref.read(repositoryProvider).setDailyBudget(_value);
+      await ref.read(repositoryProvider).setDailyBudget(value);
       messenger.showSnackBar(
-        SnackBar(content: Text('Target harian: ${formatRupiah(_value)}')),
+        SnackBar(content: Text('Target harian: ${formatRupiah(value)}')),
       );
     } catch (e) {
       messenger.showSnackBar(SnackBar(content: Text('Gagal menyimpan: $e')));
@@ -78,28 +94,23 @@ class _TargetCardState extends ConsumerState<_TargetCard> {
             'Target pengeluaran harian',
             style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
           ),
-          Text(
-            formatRupiah(_value),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _input,
+            keyboardType: TextInputType.number,
+            inputFormatters: const [RupiahInputFormatter()],
+            textInputAction: TextInputAction.done,
+            onSubmitted: (_) => _save(),
             style: const TextStyle(
-              fontSize: 28,
+              fontSize: 24,
               fontWeight: FontWeight.w800,
-              letterSpacing: -0.7,
+              fontFeatures: [FontFeature.tabularFigures()],
             ),
-          ),
-          Slider(
-            value: _value,
-            min: _min,
-            max: _max,
-            divisions: ((_max - _min) / _step).round(),
-            label: formatShort(_value),
-            onChanged: (v) => setState(() => _value = v),
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('Rp ${formatShort(_min)}', style: _rangeStyle),
-              Text('Rp ${formatShort(_max)}', style: _rangeStyle),
-            ],
+            decoration: const InputDecoration(
+              prefixText: 'Rp ',
+              hintText: '0',
+              helperText: 'Batas belanja per hari',
+            ),
           ),
           const SizedBox(height: 14),
           Container(
@@ -115,7 +126,7 @@ class _TargetCardState extends ConsumerState<_TargetCard> {
                 Expanded(
                   child: Text(
                     'Koko tetap senang selama belanja harianmu '
-                    '≤ ${formatRupiah(_value * happyThreshold)}.',
+                    '≤ ${formatRupiah((_value ?? 0) * happyThreshold)}.',
                     style: const TextStyle(
                       fontSize: 12,
                       color: AppColors.sageDark,
@@ -134,9 +145,4 @@ class _TargetCardState extends ConsumerState<_TargetCard> {
       ),
     );
   }
-
-  static const _rangeStyle = TextStyle(
-    fontSize: 12,
-    color: AppColors.textSecondary,
-  );
 }
