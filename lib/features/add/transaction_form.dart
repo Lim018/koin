@@ -11,6 +11,7 @@ import '../../core/format.dart';
 import '../../core/providers.dart';
 import '../../core/theme/app_colors.dart';
 import '../../ui/cozy.dart';
+import '../accounts/accounts_page.dart';
 
 /// Amount + category (+ kind, wallet and note unless [compact]) entry form,
 /// shared by the in-app sheet and the home-screen quick-add pop-up.
@@ -115,6 +116,11 @@ class _TransactionFormState extends ConsumerState<TransactionForm> {
       setState(() => _saving = false);
       messenger.showSnackBar(SnackBar(content: Text('Gagal menyimpan: $e')));
     }
+  }
+
+  Future<void> _addWallet() async {
+    final name = await showAccountSheet(context);
+    if (name != null && mounted) setState(() => _wallet = name);
   }
 
   String _walletOr(List<Account> accounts) =>
@@ -235,6 +241,12 @@ class _TransactionFormState extends ConsumerState<TransactionForm> {
                   showCheckmark: false,
                   onSelected: (_) => setState(() => _wallet = w),
                 ),
+              ActionChip(
+                avatar: const Icon(Icons.add_rounded, size: 18),
+                label: const Text('Tambah'),
+                tooltip: 'Tambah sumber dana',
+                onPressed: _addWallet,
+              ),
             ],
           ),
           const SizedBox(height: 16),
