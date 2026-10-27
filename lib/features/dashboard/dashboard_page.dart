@@ -15,9 +15,14 @@ import '../shop/shop_page.dart';
 import '../shell/home_shell.dart';
 
 /// Beranda, top to bottom: Koko's room, this week's budget, this month's
-/// money in/out, and today's diary.
+/// money in/out, and today's diary — all on one screen. Koko's room and the
+/// diary share the height the fixed cards leave (the diary scrolls inside
+/// its share). Phones too short for that scroll the whole page instead.
 class DashboardPage extends ConsumerWidget {
   const DashboardPage({super.key});
+
+  /// Below this content height the room would get too small to read.
+  static const _minFitHeight = 540.0;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -29,84 +34,123 @@ class DashboardPage extends ConsumerWidget {
 
     return SafeArea(
       bottom: false,
-      child: ListView(
-        padding: const EdgeInsets.fromLTRB(
-          20,
-          20,
-          20,
-          navBarClearance + writeButtonClearance,
-        ),
-        children: [
-          PageHeader(
-            context: DateFormat('EEEE, d MMMM', 'id_ID').format(today),
-            title: 'Beranda',
-            actions: [
-              _CoinChip(
-                coins: ref.watch(userStateProvider).valueOrNull?.savedCoins,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, navBarClearance - 8),
+        child: LayoutBuilder(
+          builder: (context, c) {
+            final fits = c.maxHeight >= _minFitHeight;
+            final diary = transactions.when(
+              loading: () => const SizedBox.shrink(),
+              error: (e, _) => ErrorText(e),
+              data: (txs) => DiaryList(
+                transactions: txs,
+                emptyText:
+                    'Belum ada catatan hari ini. Tekan ✏️ untuk '
+                    'mencatat pengeluaran atau pemasukan.',
               ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          switch ((todaySummary, weekSummary)) {
-            (AsyncData(value: final d), AsyncData(value: final w)) => Column(
+            );
+            // Room to scroll the last entry out from under the pencil.
+            const pencilGap = EdgeInsets.only(bottom: writeButtonClearance);
+
+            final column = Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _MascotCard(today: d),
-                const SizedBox(height: 16),
-                _WeeklyBudgetCard(week: w, today: today),
+                PageHeader(
+                  context: DateFormat('EEEE, d MMMM', 'id_ID').format(today),
+                  title: 'Beranda',
+                  actions: [
+                    _CoinChip(
+                      coins: ref
+                          .watch(userStateProvider)
+                          .valueOrNull
+                          ?.savedCoins,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                ...switch ((todaySummary, weekSummary)) {
+                  (AsyncData(value: final d), AsyncData(value: final w)) => [
+                    fits
+                        ? Flexible(child: _MascotCard(today: d))
+                        : _MascotCard(today: d, roomHeight: 120),
+                    const SizedBox(height: 10),
+                    _WeeklyBudgetCard(week: w, today: today),
+                  ],
+                  (AsyncError(:final error), _) ||
+                  (_, AsyncError(:final error)) => [ErrorText(error)],
+                  _ => [
+                    const SizedBox(
+                      height: 200,
+                      child: Center(child: CircularProgressIndicator()),
+                    ),
+                  ],
+                },
+                if (month case AsyncData(value: final m)) ...[
+                  const SizedBox(height: 10),
+                  _MonthFlow(income: incomeOf(m), spent: totalOf(m)),
+                ],
+                const SizedBox(height: 14),
+                _DiaryHeader(total: todaySummary.valueOrNull?.spent),
+                const SizedBox(height: 8),
+                if (fits)
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: pencilGap,
+                      child: diary,
+                    ),
+                  )
+                else
+                  Padding(padding: pencilGap, child: diary),
               ],
-            ),
-            (AsyncError(:final error), _) ||
-            (_, AsyncError(:final error)) => ErrorText(error),
-            _ => const SizedBox(
-              height: 420,
-              child: Center(child: CircularProgressIndicator()),
-            ),
+            );
+            return fits ? column : SingleChildScrollView(child: column);
           },
-          if (month case AsyncData(value: final m)) ...[
-            const SizedBox(height: 16),
-            _MonthFlow(income: incomeOf(m), spent: totalOf(m)),
-          ],
-          const SizedBox(height: 28),
-          _DiaryHeader(total: todaySummary.valueOrNull?.spent),
-          const SizedBox(height: 12),
-          transactions.when(
-            loading: () => const SizedBox.shrink(),
-            error: (e, _) => ErrorText(e),
-            data: (txs) => DiaryList(
-              transactions: txs,
-              emptyText:
-                  'Belum ada catatan hari ini. Tekan ✏️ untuk mencatat '
-                  'pengeluaran atau pemasukan.',
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
 }
 
-/// Koko's room plus today's mood and spending.
+/// Koko's room plus today's mood and spending. The room is [roomHeight]
+/// tall, or takes the height the card is given (up to
+/// [KokoRoom.designHeight]) when that is null.
 class _MascotCard extends ConsumerWidget {
-  const _MascotCard({required this.today});
+  const _MascotCard({required this.today, this.roomHeight});
 
   final BudgetSummary today;
+  final double? roomHeight;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final text = Theme.of(context).textTheme;
     final mood = today.mood;
+    Widget room(double height) => KokoRoom(
+      mood: mood,
+      look: ref.watch(lookProvider),
+      bubble: _bubbleText(mood),
+      height: height,
+    );
     return CozyCard(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(10),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          KokoRoom(
-            mood: mood,
-            look: ref.watch(lookProvider),
-            bubble: _bubbleText(mood),
-          ),
+          switch (roomHeight) {
+            final h? => room(h),
+            null => Flexible(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  maxHeight: KokoRoom.designHeight,
+                ),
+                child: LayoutBuilder(
+                  builder: (context, c) => room(c.maxHeight),
+                ),
+              ),
+            ),
+          },
           Padding(
-            padding: const EdgeInsets.fromLTRB(8, 16, 8, 6),
+            padding: const EdgeInsets.fromLTRB(6, 10, 6, 2),
             child: Row(
               children: [
                 Expanded(
@@ -167,6 +211,7 @@ class _WeeklyBudgetCard extends StatelessWidget {
     // The week ends on Sunday; today still counts.
     final daysLeft = 8 - today.weekday;
     return CozyCard(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -178,22 +223,31 @@ class _WeeklyBudgetCard extends StatelessWidget {
               StatusPill(label: over ? 'Lewat' : 'Aman', over: over),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 4),
           FittedBox(
             fit: BoxFit.scaleDown,
             alignment: Alignment.centerLeft,
-            child: Text(
-              formatRupiah(week.spent),
-              style: text.headlineLarge?.copyWith(
-                color: over ? AppColors.sunsetInk : null,
+            child: Text.rich(
+              TextSpan(
+                children: [
+                  TextSpan(
+                    text: formatRupiah(week.spent),
+                    style: text.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      color: over ? AppColors.sunsetInk : null,
+                    ),
+                  ),
+                  TextSpan(
+                    text: '  dari ${formatRupiah(week.budget)}',
+                    style: text.bodySmall,
+                  ),
+                ],
               ),
             ),
           ),
-          const SizedBox(height: 4),
-          Text('dari ${formatRupiah(week.budget)}', style: text.bodySmall),
-          const SizedBox(height: 16),
+          const SizedBox(height: 8),
           BudgetBar(value: week.budget > 0 ? week.spent / week.budget : 0),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           Row(
             children: [
               Expanded(
@@ -228,97 +282,76 @@ class _MonthFlow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final text = Theme.of(context).textTheme;
     final net = income - spent;
-    return Column(
-      children: [
-        Row(
+    return CozyCard(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
+      child: IntrinsicHeight(
+        child: Row(
           children: [
-            Expanded(
-              child: _FlowCard(
-                label: 'Pemasukan',
-                value: '+${formatRupiah(income)}',
-                icon: Icons.south_west_rounded,
-                color: AppColors.sageDark,
-                tint: AppColors.sageLight,
-              ),
+            _FlowCell(
+              label: 'Pemasukan bulan ini',
+              value: '+${formatRupiah(income)}',
+              color: AppColors.sageDark,
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _FlowCard(
-                label: 'Pengeluaran',
-                value: '−${formatRupiah(spent)}',
-                icon: Icons.north_east_rounded,
-                color: AppColors.sunsetInk,
-                tint: AppColors.sunsetLight,
-              ),
+            const VerticalDivider(width: 1, color: AppColors.track),
+            _FlowCell(
+              label: 'Pengeluaran bulan ini',
+              value: '−${formatRupiah(spent)}',
+              color: AppColors.sunsetInk,
+            ),
+            const VerticalDivider(width: 1, color: AppColors.track),
+            _FlowCell(
+              label: 'Selisih bulan ini',
+              value: '${net < 0 ? '−' : '+'}${formatRupiah(net.abs())}',
+              color: net < 0 ? AppColors.sunsetInk : AppColors.sageDark,
             ),
           ],
         ),
-        const SizedBox(height: 12),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: Row(
-            children: [
-              Expanded(child: Text('Selisih bulan ini', style: text.bodySmall)),
-              Text(
-                '${net < 0 ? '−' : '+'}${formatRupiah(net.abs())}',
-                style: text.bodySmall?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: net < 0 ? AppColors.sunsetInk : AppColors.sageDark,
-                  fontFeatures: const [FontFeature.tabularFigures()],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
+      ),
     );
   }
 }
 
-class _FlowCard extends StatelessWidget {
-  const _FlowCard({
+class _FlowCell extends StatelessWidget {
+  const _FlowCell({
     required this.label,
     required this.value,
-    required this.icon,
     required this.color,
-    required this.tint,
   });
 
   final String label;
   final String value;
-  final IconData icon;
   final Color color;
-  final Color tint;
 
   @override
   Widget build(BuildContext context) {
     final text = Theme.of(context).textTheme;
-    return CozyCard(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              color: tint,
-              borderRadius: BorderRadius.circular(10),
+    return Expanded(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              maxLines: 2,
+              style: text.bodySmall?.copyWith(fontSize: 11, height: 1.2),
             ),
-            child: Icon(icon, size: 18, color: color),
-          ),
-          const SizedBox(height: 12),
-          Text(label, style: text.labelMedium),
-          Text('bulan ini', style: text.bodySmall?.copyWith(fontSize: 11)),
-          const SizedBox(height: 6),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.centerLeft,
-            child: Text(value, style: text.titleLarge?.copyWith(color: color)),
-          ),
-        ],
+            const SizedBox(height: 4),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(
+                value,
+                style: text.titleSmall?.copyWith(
+                  color: color,
+                  fontWeight: FontWeight.w800,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

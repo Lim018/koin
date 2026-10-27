@@ -88,10 +88,18 @@ class _NavBar extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          _tab(0, const _Emoji('📒'), 'Beranda'),
-          _tab(1, const _Emoji('📊'), 'Statistik'),
-          _tab(2, const _Emoji('👛'), 'Bank'),
-          _tab(3, const EquippedKoko(width: 30), 'Profil'),
+          // The selected tab is Flexible: on narrow phones its label
+          // truncates instead of overflowing.
+          for (final (i, icon, label) in [
+            (0, const _Emoji('📒') as Widget, 'Beranda'),
+            (1, const _Emoji('📊'), 'Statistik'),
+            (2, const _Emoji('👛'), 'Bank'),
+            (3, const EquippedKoko(width: 30), 'Profil'),
+          ])
+            if (i == index)
+              Flexible(child: _tab(i, icon, label))
+            else
+              _tab(i, icon, label),
         ],
       ),
     );
@@ -129,23 +137,26 @@ class _NavBar extends StatelessWidget {
                 ),
                 child: icon,
               ),
-              AnimatedSize(
-                duration: const Duration(milliseconds: 220),
-                curve: Curves.easeOutCubic,
-                child: selected
-                    ? Padding(
-                        padding: const EdgeInsets.fromLTRB(8, 0, 10, 0),
-                        child: Text(
-                          label,
-                          maxLines: 1,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.textOnChip,
+              Flexible(
+                child: AnimatedSize(
+                  duration: const Duration(milliseconds: 220),
+                  curve: Curves.easeOutCubic,
+                  child: selected
+                      ? Padding(
+                          padding: const EdgeInsets.fromLTRB(8, 0, 10, 0),
+                          child: Text(
+                            label,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.textOnChip,
+                            ),
                           ),
-                        ),
-                      )
-                    : const SizedBox.shrink(),
+                        )
+                      : const SizedBox.shrink(),
+                ),
               ),
             ],
           ),
