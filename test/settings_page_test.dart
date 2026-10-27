@@ -47,7 +47,7 @@ void main() {
     }
 
     expect(find.byType(CircularProgressIndicator), findsNothing);
-    expect(find.text('Target hemat harian'), findsOneWidget);
+    expect(find.text('Target pengeluaran harian'), findsOneWidget);
     expect(tester.binding.hasScheduledFrame, isFalse);
 
     SwitchListTile tile(String title) =>

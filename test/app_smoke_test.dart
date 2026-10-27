@@ -102,6 +102,8 @@ void main() {
     await tester.pump();
     expect(find.text('Total Pengeluaran Bulan Ini'), findsNothing);
     expect(find.widgetWithText(PageHeader, 'Statistik'), findsOneWidget);
+    // The pie breakdown lists the entry's category at 100%.
+    expect(find.text('100%'), findsOneWidget);
 
     await openTab(tester, 'Bank');
     expect(find.widgetWithText(PageHeader, 'Bank'), findsOneWidget);
@@ -111,7 +113,7 @@ void main() {
     // The daily target lives in "Profil", next to the other settings.
     await openTab(tester, 'Profil');
     expect(find.widgetWithText(PageHeader, 'Profil'), findsOneWidget);
-    expect(find.text('Target hemat harian'), findsOneWidget);
+    expect(find.text('Target pengeluaran harian'), findsOneWidget);
     expect(find.text('Simpan target'), findsOneWidget);
   });
 
