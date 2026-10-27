@@ -57,7 +57,7 @@ class _InsightViewState extends ConsumerState<InsightView> {
   late DateTime _anchor = dateOnly(DateTime.now());
 
   /// The picked range for [_Period.custom]; defaults to this month.
-  late DateRange _custom = monthRange(_anchor);
+  late DateRange _custom = monthRange(ref.read(todayProvider));
 
   DateRange get _range => switch (_period) {
     _Period.weekly => weekRange(_anchor),
@@ -66,14 +66,22 @@ class _InsightViewState extends ConsumerState<InsightView> {
     _Period.custom => _custom,
   };
 
+  /// Moves one week/month/year, keeping the day (clamped to the month's
+  /// length) so switching period stays near the same date.
   void _shift(int delta) => setState(() {
     final a = _anchor;
-    _anchor = switch (_period) {
-      _Period.weekly => DateTime(a.year, a.month, a.day + 7 * delta),
-      _Period.monthly => DateTime(a.year, a.month + delta),
-      _Period.annually => DateTime(a.year + delta),
-      _Period.custom => a,
+    if (_period == _Period.weekly) {
+      _anchor = DateTime(a.year, a.month, a.day + 7 * delta);
+      return;
+    }
+    final (year, month) = switch (_period) {
+      _Period.monthly => (a.year, a.month + delta),
+      _Period.annually => (a.year + delta, a.month),
+      _ => (a.year, a.month),
     };
+    final first = DateTime(year, month);
+    final last = DateUtils.getDaysInMonth(first.year, first.month);
+    _anchor = DateTime(first.year, first.month, math.min(a.day, last));
   });
 
   Future<void> _pickRange() async {
