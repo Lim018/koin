@@ -12,6 +12,7 @@ import '../../core/providers.dart';
 import '../../core/theme/app_colors.dart';
 import '../../ui/cozy.dart';
 import '../accounts/accounts_page.dart';
+import 'category_form.dart';
 
 /// Amount + category (+ kind, wallet and note unless [compact]) entry form,
 /// shared by the in-app sheet and the home-screen quick-add pop-up.
@@ -55,7 +56,8 @@ class _TransactionFormState extends ConsumerState<TransactionForm> {
   late final _note = TextEditingController(text: widget.editing?.note);
   late var _kind = widget.editing?.kind ?? TransactionKind.expense;
   late TxCategory _category = switch (widget.editing) {
-    final e? => TxCategory.of(e),
+    final e? =>
+      ref.read(categoriesProvider).valueOrNull?.of(e) ?? TxCategory.of(e),
     null => widget.initial?.category ?? ExpenseCategory.makan,
   };
 
@@ -123,6 +125,47 @@ class _TransactionFormState extends ConsumerState<TransactionForm> {
     if (name != null && mounted) setState(() => _wallet = name);
   }
 
+  Future<void> _addCategory() async {
+    final label = await showCategorySheet(context, kind: _kind);
+    if (label == null || !mounted) return;
+    // The new category arrives with the next categoriesProvider emission.
+    final added = ref
+        .read(categoriesProvider)
+        .valueOrNull
+        ?.forKind(_kind)
+        .where((c) => c.label == label)
+        .firstOrNull;
+    setState(() => _category = added ?? _PendingCategory(label));
+  }
+
+  Future<void> _deleteCategory(UserCategory c) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Hapus kategori ${c.emoji} ${c.label}?'),
+        content: const Text(
+          'Catatan yang sudah ada tetap tersimpan dan tampil sebagai '
+          '"Lainnya".',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Hapus'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    await ref.read(repositoryProvider).deleteCategory(c.source.id);
+    if (mounted && _category.label == c.label) {
+      setState(() => _category = TxCategory.forKind(_kind).first);
+    }
+  }
+
   String _walletOr(List<Account> accounts) =>
       _wallet ?? (accounts.isEmpty ? 'Cash' : accounts.first.name);
 
@@ -142,7 +185,9 @@ class _TransactionFormState extends ConsumerState<TransactionForm> {
         ? ExpenseCategory.values.where(
             (c) => c.index < 4 || c == widget.initial?.category,
           )
-        : TxCategory.forKind(_kind);
+        : (ref.watch(categoriesProvider).valueOrNull ?? Categories()).forKind(
+            _kind,
+          );
     final income = _kind == TransactionKind.income;
     final accounts = ref.watch(accountsProvider).valueOrNull ?? const [];
     final wallet = _walletOr(accounts);
@@ -218,11 +263,24 @@ class _TransactionFormState extends ConsumerState<TransactionForm> {
           runSpacing: 8,
           children: [
             for (final c in categories)
-              ChoiceChip(
-                label: Text('${c.emoji} ${c.label}'),
-                selected: c == _category,
-                showCheckmark: false,
-                onSelected: (_) => setState(() => _category = c),
+              GestureDetector(
+                onLongPress: c is UserCategory
+                    ? () => _deleteCategory(c)
+                    : null,
+                child: ChoiceChip(
+                  label: Text('${c.emoji} ${c.label}'),
+                  // By label: custom categories are rebuilt on every change.
+                  selected: c.label == _category.label,
+                  showCheckmark: false,
+                  onSelected: (_) => setState(() => _category = c),
+                ),
+              ),
+            if (!widget.compact)
+              ActionChip(
+                avatar: const Icon(Icons.add_rounded, size: 18),
+                label: const Text('Tambah'),
+                tooltip: 'Tambah kategori',
+                onPressed: _addCategory,
               ),
           ],
         ),
@@ -305,4 +363,17 @@ Future<void> showTransactionSheet(
       },
     ),
   );
+}
+
+/// A just-added category until the categories stream catches up; only its
+/// label is saved.
+class _PendingCategory implements TxCategory {
+  _PendingCategory(this.label);
+
+  @override
+  final String label;
+  @override
+  String get emoji => '';
+  @override
+  Color get tint => AppColors.track;
 }

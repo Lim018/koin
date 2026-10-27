@@ -1,5 +1,6 @@
 import 'package:flutter/painting.dart';
 
+import 'db/custom_category.dart';
 import 'db/transaction.dart';
 
 /// What the form and diary need from either kind of category; stored by
@@ -60,4 +61,60 @@ enum IncomeCategory implements TxCategory {
 
   static IncomeCategory fromLabel(String label) =>
       values.firstWhere((c) => c.label == label, orElse: () => lainnya);
+}
+
+/// A [CustomCategory] as a [TxCategory].
+class UserCategory implements TxCategory {
+  UserCategory(this.source);
+
+  final CustomCategory source;
+
+  @override
+  String get label => source.label;
+  @override
+  String get emoji => source.emoji;
+  @override
+  Color get tint => _tints[source.id % _tints.length];
+
+  TransactionKind get kind => source.kind;
+
+  static const _tints = [
+    Color(0xFFFCE8DC),
+    Color(0xFFF6EDD4),
+    Color(0xFFE5EFE0),
+    Color(0xFFF2E3EC),
+    Color(0xFFE4ECEF),
+  ];
+}
+
+/// The built-in categories plus the user's own.
+class Categories {
+  Categories([Iterable<CustomCategory> custom = const []])
+    : custom = [for (final c in custom) UserCategory(c)];
+
+  final List<UserCategory> custom;
+
+  /// Built-ins first, then the user's own, with "Lainnya" last.
+  List<TxCategory> forKind(TransactionKind kind) {
+    final builtIn = TxCategory.forKind(kind);
+    return [
+      ...builtIn.take(builtIn.length - 1),
+      ...custom.where((c) => c.kind == kind),
+      builtIn.last,
+    ];
+  }
+
+  /// The category of [t]; unknown labels fall back to "Lainnya".
+  TxCategory of(Transaction t) {
+    for (final c in custom) {
+      if (c.kind == t.kind && c.label == t.category) return c;
+    }
+    return TxCategory.of(t);
+  }
+
+  /// Whether [label] is already taken by a [kind] category (any case).
+  bool isTaken(String label, TransactionKind kind) {
+    final l = label.toLowerCase();
+    return forKind(kind).any((c) => c.label.toLowerCase() == l);
+  }
 }

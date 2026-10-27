@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:isar_community/isar.dart';
 
 import 'budget/budget.dart';
+import 'categories.dart';
 import 'db/account.dart';
 import 'db/repository.dart';
 import 'db/transaction.dart';
@@ -39,6 +40,13 @@ final userStateProvider = StreamProvider<UserState>(
 
 final accountsProvider = StreamProvider<List<Account>>(
   (ref) => ref.watch(repositoryProvider).watchAccounts(),
+);
+
+/// Built-in plus user-added categories.
+final categoriesProvider = StreamProvider<Categories>(
+  (ref) => ref.watch(repositoryProvider).watchCustomCategories().map(
+    Categories.new,
+  ),
 );
 
 /// Equipped pet, accessory and habitat; the default look while loading.

@@ -66,6 +66,8 @@ class _DiaryListState extends ConsumerState<DiaryList> {
 
   @override
   Widget build(BuildContext context) {
+    final categories =
+        ref.watch(categoriesProvider).valueOrNull ?? Categories();
     final txs = [
       for (final t in widget.transactions)
         if (!_removed.contains(t.id)) t,
@@ -88,6 +90,7 @@ class _DiaryListState extends ConsumerState<DiaryList> {
               ),
             _DiaryRow(
               transaction: t,
+              category: categories.of(t),
               onTap: widget.readOnly
                   ? null
                   : () => showTransactionSheet(context, editing: t),
@@ -103,11 +106,13 @@ class _DiaryListState extends ConsumerState<DiaryList> {
 class _DiaryRow extends StatelessWidget {
   const _DiaryRow({
     required this.transaction,
+    required this.category,
     required this.onTap,
     required this.onDismissed,
   });
 
   final Transaction transaction;
+  final TxCategory category;
 
   /// Both null when the list is read-only.
   final VoidCallback? onTap;
@@ -116,7 +121,6 @@ class _DiaryRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = transaction;
-    final category = TxCategory.of(t);
     final subtitle = [
       t.category,
       t.walletSource,
